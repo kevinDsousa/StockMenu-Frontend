@@ -2,7 +2,7 @@ import { Table, TableScrollContainer, LoadingOverlay, Box, Text } from '@mantine
 import type { DataTableProps } from './__data-table.config';
 import type { ReactNode } from 'react';
 
-export const DataTable = <T,>({ data, columns, isLoading = false, emptyMessage = 'Nenhum dado encontrado' }: DataTableProps<T>) => {
+export const AppDataTable = <T,>({ data, columns, isLoading = false, emptyMessage = 'Nenhum dado encontrado' }: DataTableProps<T>) => {
   return (
     <Box pos="relative">
       <LoadingOverlay visible={isLoading} overlayProps={{ blur: 2 }} />

@@ -1,2 +1,5 @@
 export { Button } from './Button'
 export { Card } from './Card'
+export { AppDataTable } from './DefaultDataTable/AppDataTable'
+export { AppModal } from './DefaultModal/AppModal'
+export { AppTooltip } from './DefaultTooltip/AppTooltip'
