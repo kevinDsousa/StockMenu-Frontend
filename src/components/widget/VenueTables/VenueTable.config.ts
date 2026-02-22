@@ -40,7 +40,7 @@ const defaultStatusStyle: StatusStyleConfig = {
   radius: 'md',
   hoverOpacity: 0.9,
   backgroundColor: '',
-  transition: 'all 150ms ease',
+  transition: 'all 200ms ease-in-out',
 };
 
 /** Mapeia o status da mesa para sua respectiva configuração visual */
@@ -65,37 +65,30 @@ export const statusVenueTableMap: Record<TableStatus, StatusStyleConfig> = {
 
 export const useStyles = createUseStyles({
   button: {
-    // Variáveis CSS para facilitar reuso e performance
     '--table-bg': (props: StyleProps) => props.backgroundColor,
     
-    // Base do Botão
     backgroundColor: 'var(--table-bg) !important',
-    color: TEXT_PRIMARY,
-    transition: (props: StyleProps) => props.transition,
+    color: `${TEXT_PRIMARY} !important`,
     border: '0 !important',
     outline: 'none !important',
     opacity: 1,
+    transition: (props: StyleProps) => props.transition,
 
-    // Garante que o texto/ícones internos herdem a cor primária
     '& *': {
       color: 'inherit !important',
     },
 
-    // Estado: Hover
     '&:hover': {
-      // Aplica transparência apenas no fundo sem afetar o texto
       backgroundColor: (props: StyleProps) => 
         `color-mix(in srgb, var(--table-bg), transparent ${
           (1 - (props.hoverOpacity ?? 0.9)) * 100
         }%) !important`,
     },
     
-    // Estado: Focus (Acessibilidade)
     '&:focus': {
       outline: 'none !important',
     },
     
-    // Estado: Click (Feedback Tátil)
     '&:active': {
       transform: 'translateY(1px)',
     },

@@ -1,7 +1,7 @@
 import { useMantineColorScheme } from '@mantine/core'
 import { Button } from '../../ui'
-import { statusVenueTableMap, useStyles } from '@/components/widget/VenueTables/__venue-table-config'
-import type { TableProps } from '@/components/widget/VenueTables/__venue-table-config'
+import { statusVenueTableMap, useStyles } from '@/components/widget/VenueTables/VenueTable.config'
+import type { TableProps } from '@/components/widget/VenueTables/VenueTable.config'
 
 export const VenueTables = ({ tableName = 'Mesa', statusTable, tableNumber, onClick }: TableProps) => {
 
