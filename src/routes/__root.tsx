@@ -1,5 +1,5 @@
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
-import { AppShell, Burger, Group, NavLink, Title, Text } from '@mantine/core'
+import { AppShell, Burger, Group, NavLink, Title, Text, ActionIcon, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { Icon } from '@/components/icons'
 
@@ -9,6 +9,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const [opened, { toggle }] = useDisclosure()
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme()
 
   return (
     <AppShell
@@ -21,9 +22,21 @@ function RootComponent() {
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md">
-          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-          <Title order={3} c="blue">StockMenu</Title>
+        <Group h="100%" px="md" justify="space-between">
+          <Group>
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Title order={3} c="blue">StockMenu</Title>
+          </Group>
+          <Tooltip label={colorScheme === 'dark' ? 'Modo claro' : 'Modo escuro'}>
+            <ActionIcon
+              variant="subtle"
+              size="lg"
+              aria-label={colorScheme === 'dark' ? 'Alternar para modo claro' : 'Alternar para modo escuro'}
+              onClick={() => toggleColorScheme()}
+            >
+              <Icon name={colorScheme === 'dark' ? 'sun' : 'moon'} size={22} />
+            </ActionIcon>
+          </Tooltip>
         </Group>
       </AppShell.Header>
 

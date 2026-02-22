@@ -18,6 +18,8 @@ import { Icon } from '@/components/icons'
 | `home`     | Dashboard      |
 | `building` | Empresas       |
 | `package`  | Estoque        |
+| `sun`      | Tema claro (toggle no header) |
+| `moon`     | Tema escuro (toggle no header) |
 
 Lista completa: ver array `iconNames` em `src/components/icons/Icon.tsx`.
 

@@ -19,9 +19,10 @@ Guias de referência na pasta `docs/`:
 
 | Documento | Conteúdo |
 |-----------|----------|
-| [docs/ROTAS.md](docs/ROTAS.md) | Uso do TanStack Router, como adicionar rota, menu |
+| [docs/ROTAS.md](docs/ROTAS.md) | Rotas (nova rota, rota com parâmetro), navegação, menu |
 | [docs/COMPONENTES.md](docs/COMPONENTES.md) | Componentes UI/layout, como criar e usar |
-| [docs/TEMA-E-CORES.md](docs/TEMA-E-CORES.md) | Tema Mantine, cores e tokens |
+| [docs/HOOKS.md](docs/HOOKS.md) | Hooks React Query: uso e como criar novo hook |
+| [docs/TEMA-E-CORES.md](docs/TEMA-E-CORES.md) | Tema Mantine, dark mode, cores e tokens |
 | [docs/ICONES.md](docs/ICONES.md) | Componente Icon centralizado, como adicionar ícone |
 | [docs/API-E-ROTAS.md](docs/API-E-ROTAS.md) | Client API, endpoints, hooks, env |
 | [docs/ENTIDADES-E-DTOs.md](docs/ENTIDADES-E-DTOs.md) | Entidades e DTOs do domínio |

@@ -2,6 +2,8 @@ import {
   IconHome2,
   IconBuildingSkyscraper,
   IconPackage,
+  IconSun,
+  IconMoon,
   type Icon as TablerIconType,
 } from '@tabler/icons-react'
 
@@ -9,6 +11,8 @@ export const iconNames = [
   'home',
   'building',
   'package',
+  'sun',
+  'moon',
 ] as const
 
 export type IconName = (typeof iconNames)[number]
@@ -17,6 +21,8 @@ const iconMap: Record<IconName, TablerIconType> = {
   home: IconHome2,
   building: IconBuildingSkyscraper,
   package: IconPackage,
+  sun: IconSun,
+  moon: IconMoon,
 }
 
 export interface IconProps {

@@ -36,7 +36,23 @@ Em `src/index.css` você pode definir variáveis e referenciá-las no tema ou em
 
 ## Modo escuro/claro
 
-O Mantine usa `colorScheme` (light/dark). Para forçar ou alternar, use `MantineProvider` com `defaultColorScheme` ou o hook `useMantineColorScheme`. O tema aplica as variantes de cor automaticamente.
+O app está configurado com **dark mode** como padrão em `src/App.tsx`:
+
+```tsx
+<MantineProvider theme={theme} defaultColorScheme="dark">
+```
+
+- Para usar **light** como padrão, troque para `defaultColorScheme="light"`.
+- Para seguir a preferência do sistema: `defaultColorScheme="auto"`.
+- Para alternar em runtime, use o hook `useMantineColorScheme()`. **Exemplo:** no header do app já existe um botão (ícone sol/lua) que chama `toggleColorScheme()` – ver `src/routes/__root.tsx`:
+
+```tsx
+import { useMantineColorScheme } from '@mantine/core'
+
+const { colorScheme, toggleColorScheme } = useMantineColorScheme()
+// toggleColorScheme() alterna entre light e dark
+// colorScheme é 'light' | 'dark' | 'auto'
+```
 
 ## Adicionar variantes de cor
 

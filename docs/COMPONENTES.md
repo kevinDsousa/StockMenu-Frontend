@@ -36,10 +36,52 @@ Exemplo:
 
 ## Como criar um novo componente
 
-1. **UI:** criar em `src/components/ui/NomeDoComponente.tsx`, exportar no `src/components/ui/index.ts` e no `src/components/index.ts`.
-2. **Layout:** criar em `src/components/layout/`, seguir o mesmo padrão de export.
-3. Usar o componente Mantine como base e re-exportar com props padronizadas (ex.: radius, variant).
-4. Manter acessibilidade (labels, roles) quando aplicar.
+### Passo a passo (exemplo: wrapper de TextInput)
+
+1. **Decidir a pasta:** componente de formulário/campo → `src/components/ui/`; componente de estrutura de página → `src/components/layout/`.
+
+2. **Criar o arquivo** em `src/components/ui/`, por exemplo `TextInput.tsx`:
+
+```tsx
+import { TextInput as MantineTextInput, type TextInputProps } from '@mantine/core'
+
+export function TextInput(props: TextInputProps) {
+  return <MantineTextInput radius="md" {...props} />
+}
+```
+
+Use o componente do Mantine como base e defina defaults (radius, size, variant) em um só lugar.
+
+3. **Exportar no barrel da pasta:** em `src/components/ui/index.ts` adicione:
+
+```ts
+export { TextInput } from './TextInput'
+```
+
+4. **Exportar no barrel principal:** em `src/components/index.ts` adicione na re-exportação de `ui`:
+
+```ts
+export { Button, Card, TextInput } from './ui'
+```
+
+5. **Usar na rota ou em outro componente:**
+
+```tsx
+import { TextInput } from '@/components'
+
+<TextInput label="Nome" placeholder="Digite o nome" />
+```
+
+### Quando usar `ui` vs `layout`
+
+- **ui:** botões, inputs, cards, badges, modais, etc. – coisas que se repetem em várias telas e seguem o mesmo visual.
+- **layout:** blocos que definem a estrutura da página (PageContainer, PageHeader, sidebar customizada). Um componente de layout pode usar componentes de `ui` por dentro.
+
+### Dica: props e acessibilidade
+
+- Tipar as props com a interface do Mantine (ex.: `TextInputProps`) e estender com `...props` para não perder opções.
+- Para formulários, use `label`, `description`, `error` e, se necessário, `aria-*` para leitores de tela.
+- Manter um componente por arquivo e nome do arquivo em PascalCase (ex.: `StatusBadge.tsx`).
 
 ## Convenções
 

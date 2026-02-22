@@ -6,7 +6,7 @@ import { AppRouter } from '@/router'
 
 export default function App() {
   return (
-    <MantineProvider theme={theme}>
+    <MantineProvider theme={theme} defaultColorScheme="dark">
       <QueryProvider>
         <AppRouter />
       </QueryProvider>
