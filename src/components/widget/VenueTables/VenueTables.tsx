@@ -8,7 +8,7 @@ export const VenueTables = ({ tableName = 'Mesa', statusTable, tableNumber, onCl
   const { colorScheme } = useMantineColorScheme()
 
   const statusConfig = statusVenueTableMap[statusTable]
-  
+
   const classes = useStyles({ ...statusConfig, colorScheme })
 
   return (
@@ -17,6 +17,11 @@ export const VenueTables = ({ tableName = 'Mesa', statusTable, tableNumber, onCl
       radius={statusConfig.radius}
       onClick={onClick}
       className={classes.button}
+      styles={{
+        root: {
+          padding: statusConfig.padding,
+        },
+      }}
     >
       {tableName} - {tableNumber ?? 'N'}
     </Button>

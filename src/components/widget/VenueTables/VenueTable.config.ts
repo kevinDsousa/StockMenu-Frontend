@@ -12,6 +12,7 @@ export type TableStatus = 'open' | 'requesting_order' | 'requesting_close';
 /** Configuração de estilo para cada estado da mesa */
 export interface StatusStyleConfig {
   backgroundColor: string;
+  padding: string;
   size: TableSize;
   radius?: number | string;
   hoverOpacity?: number;
@@ -41,6 +42,7 @@ const defaultStatusStyle: StatusStyleConfig = {
   hoverOpacity: 0.9,
   backgroundColor: '',
   transition: 'all 200ms ease-in-out',
+  padding: '12px 20px',
 };
 
 /** Mapeia o status da mesa para sua respectiva configuração visual */

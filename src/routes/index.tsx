@@ -12,6 +12,7 @@ function DashboardComponent() {
     <PageContainer title="Dashboard">
       <Text c="dimmed">Visão geral do sistema. Em breve: resumo de pedidos e mesas.</Text>
       <VenueTables statusTable='requesting_close' tableNumber={10} />
+      <VenueTables statusTable='open' tableNumber={10} />
     </PageContainer>
   )
 }
