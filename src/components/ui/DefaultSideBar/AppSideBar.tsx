@@ -1,20 +1,19 @@
 import { Drawer } from '@mantine/core';
-import type { SideBarProps } from './__sidebar.config';
+import { buildDrawerStyles, type SideBarProps } from './__sidebar.config';
 
-export const AppSideBar = ({ children, isOpen, onClose, side = 'right', width = '300px', title, backgroundColor }: SideBarProps) => {
+export const AppSideBar = ({ children, isOpen, onClose, position = 'left', width = 300, title, backgroundColor, withoutOverlay = false,
+ zIndex = 200 }: SideBarProps) => {
   return (
     <Drawer
       opened={isOpen}
       onClose={onClose}
-      position={side}
+      position={position}
       size={width}
       withCloseButton
       title={title}
-      styles={{
-        inner: {
-          backgroundColor: backgroundColor,
-        },
-      }}
+      withOverlay={!withoutOverlay}
+      zIndex={zIndex}
+      styles={buildDrawerStyles(position, backgroundColor)}
     >
       {children}
     </Drawer>

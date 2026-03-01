@@ -1,6 +1,7 @@
 import { TABLE_OPEN_PASTEL, TABLE_REQUESTING_CLOSE_PASTEL, TABLE_REQUESTING_ORDER_PASTEL, TEXT_PRIMARY } from '@/theme';
 import type { MantineColorScheme } from '@mantine/core';
 import { createUseStyles } from 'react-jss';
+import type { MouseEvent } from 'react';
 
 // =============================================================================
 // 1. TIPAGENS (Interfaces e Types)
@@ -24,7 +25,7 @@ export interface TableProps {
   tableName?: string;
   statusTable: TableStatus;
   tableNumber?: number | string;
-  onClick?: () => void;
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
 /** Props internas para o Hook de Estilos (JSS) */
