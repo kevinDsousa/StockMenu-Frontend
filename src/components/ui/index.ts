@@ -1,4 +1,4 @@
-export { Button } from './Button'
+export { Button } from './DefaultButton/AppButton'
 export { Card } from './Card'
 export { AppDataTable } from './DefaultDataTable/AppDataTable'
 export { AppModal } from './DefaultModal/AppModal'
