@@ -1,5 +1,7 @@
-export { Button } from './DefaultButton/AppButton'
+export { AppButton as Button } from './DefaultButton/AppButton'
 export { Card } from './Card'
 export { AppDataTable } from './DefaultDataTable/AppDataTable'
 export { AppModal } from './DefaultModal/AppModal'
 export { AppTooltip } from './DefaultTooltip/AppTooltip'
+export { AppInput } from './DefaultInput/AppInput'
+export { AppPasswordInput } from './DefaultPasswordInput/AppPasswordInput'

@@ -1,12 +1,12 @@
-import { Button as MantineButton, type ButtonProps } from '@mantine/core';
-import type { ComponentPropsWithoutRef } from 'react';
+import { Button as MantineButton, type ButtonProps } from '@mantine/core'
+import type { ComponentPropsWithoutRef } from 'react'
 import {
   buildButtonStyles,
   isAutoDisabled,
   type AppButtonProps,
-} from './__button.config';
+} from './__button.config'
 
-type Props = AppButtonProps & ButtonProps & ComponentPropsWithoutRef<'button'>;
+type Props = AppButtonProps & ButtonProps & ComponentPropsWithoutRef<'button'>
 
 export const AppButton = ({
   status = 'default',
@@ -21,5 +21,7 @@ export const AppButton = ({
       styles={buildButtonStyles(status, styleConfig)}
       {...props}
     />
-  );
-};
+  )
+}
+
+export const Button = AppButton

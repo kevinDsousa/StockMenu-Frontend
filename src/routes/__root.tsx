@@ -1,7 +1,8 @@
-import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
+import { createRootRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { AppShell, Burger, Group, NavLink, Title, Text, ActionIcon, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { Icon } from '@/components/icons'
+import { useAuthStore } from '@/store/auth'
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -10,6 +11,10 @@ export const Route = createRootRoute({
 function RootComponent() {
   const [opened, { toggle }] = useDisclosure()
   const { colorScheme, toggleColorScheme } = useMantineColorScheme()
+  const user = useAuthStore((state) => state.user)
+  const isAuthenticated = !!user
+  const routerState = useRouterState()
+  const isLoginRoute = routerState.location.pathname === '/login'
 
   return (
     <AppShell
@@ -40,35 +45,40 @@ function RootComponent() {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">
-        <Text size="xs" fw={700} c="dimmed" mb="xs" tt="uppercase">
-          Menu Principal
-        </Text>
-        
-        {/* Link para a Home */}
-        <NavLink
-          component={Link}
-          to="/"
-          label="Dashboard"
-          leftSection={<Icon name="home" size={20} />}
-        />
+      {!isLoginRoute && isAuthenticated && (
+        <AppShell.Navbar p="md">
+          <Text size="xs" fw={700} c="dimmed" mb="xs" tt="uppercase">
+            Menu Principal
+          </Text>
 
-        {/* Link para Empresas */}
-        <NavLink
-          component={Link}
-          to="/companies"
-          label="Empresas"
-          leftSection={<Icon name="building" size={20} />}
-        />
+          <NavLink
+            component={Link}
+            to="/"
+            label="Dashboard"
+            leftSection={<Icon name="home" size={20} />}
+          />
 
-        {/* Link para Estoque (Exemplo de futura feature) */}
-        <NavLink
-          component={Link}
-          to="/inventory"
-          label="Estoque"
-          leftSection={<Icon name="package" size={20} />}
-        />
-      </AppShell.Navbar>
+          <NavLink
+            component={Link}
+            to="/companies"
+            label="Empresas"
+            leftSection={<Icon name="building" size={20} />}
+          />
+
+          <NavLink
+            component={Link}
+            to="/inventory"
+            label="Estoque"
+            leftSection={<Icon name="package" size={20} />}
+          />
+          <NavLink
+            component={Link}
+            to="/menu"
+            label="Cardápio"
+            leftSection={<Icon name="package" size={20} />}
+          />
+        </AppShell.Navbar>
+      )}
 
       <AppShell.Main>
         {/* O Outlet é onde as páginas específicas (Home, Companies, etc) serão renderizadas */}
