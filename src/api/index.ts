@@ -1,5 +1,7 @@
 export { apiClient } from './client'
 export * from './auth'
+export * from './enums'
+export * from './unit-measures'
 export * from './companies'
 export * from './subscriptions'
 export * from './primary-products'

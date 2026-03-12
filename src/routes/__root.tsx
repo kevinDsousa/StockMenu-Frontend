@@ -92,6 +92,12 @@ function RootComponent() {
           />
           <NavLink
             component={Link}
+            to="/settings"
+            label="Configurações"
+            leftSection={<Icon name="settings" size={20} />}
+          />
+          <NavLink
+            component={Link}
             to="/orders"
             label="Pedidos"
             leftSection={<Icon name="package" size={20} />}

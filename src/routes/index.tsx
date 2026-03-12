@@ -24,6 +24,7 @@ function DashboardComponent() {
   const createVenueTableMutation = useCreateVenueTable()
   const updateVenueTableMutation = useUpdateVenueTable()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{ tableNumber?: string }>({})
 
   const tableList = Array.isArray(tables)
     ? tables
@@ -43,6 +44,7 @@ function DashboardComponent() {
     setEditingTableId(null)
     setTableNumber('')
     setCapacity('')
+    setFieldErrors({})
     setIsModalOpen(true)
   }
 
@@ -50,11 +52,13 @@ function DashboardComponent() {
     setEditingTableId(table.id)
     setTableNumber(String(table.tableNumber ?? ''))
     setCapacity(table.capacity != null ? String(table.capacity) : '')
+    setFieldErrors({})
     setIsModalOpen(true)
   }
 
   const handleCloseModal = () => {
     setErrorMessage(null)
+    setFieldErrors({})
     setIsModalOpen(false)
   }
 
@@ -62,7 +66,10 @@ function DashboardComponent() {
     if (!user?.companyId) return
     const parsedTableNumber = Number(tableNumber)
     const parsedCapacity = capacity ? Number(capacity) : null
-    if (!parsedTableNumber || parsedTableNumber < 1) return
+    const errors: { tableNumber?: string } = {}
+    if (!parsedTableNumber || parsedTableNumber < 1) errors.tableNumber = 'Informe um número válido (maior que zero)'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     setErrorMessage(null)
 
     const onError = (err: unknown) => setErrorMessage(extractApiErrorMessage(err))
@@ -150,7 +157,11 @@ function DashboardComponent() {
           <AppInput
             label="Número da mesa"
             value={tableNumber}
-            onChange={(event) => setTableNumber(event.currentTarget.value)}
+            onChange={(event) => {
+              setTableNumber(event.currentTarget.value)
+              if (fieldErrors.tableNumber) setFieldErrors((prev) => ({ ...prev, tableNumber: undefined }))
+            }}
+            error={fieldErrors.tableNumber}
           />
           <AppInput
             label="Capacidade"

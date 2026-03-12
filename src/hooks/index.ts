@@ -1,4 +1,5 @@
 export * from './useCompanies'
+export * from './useEnums'
 export * from './usePrimaryProducts'
 export * from './useOrders'
 export * from './useLogin'

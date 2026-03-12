@@ -100,7 +100,7 @@ export const buildButtonStyles = (
         cursor: 'not-allowed',
         opacity: 1,
       },
-      '&[data-disabled]': {
+      '&[dataDisabled]': {
         backgroundColor: c.disabledBackgroundColor,
         color: c.disabledTextColor,
         cursor: 'not-allowed',

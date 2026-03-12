@@ -39,6 +39,7 @@ function UsersPage() {
   const [role, setRole] = useState<'WAITER' | 'COMPANY_ADMIN'>('WAITER')
   const [active, setActive] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({})
 
   const users = Array.isArray(data) ? data : (data as any)?.data ?? []
 
@@ -53,6 +54,7 @@ function UsersPage() {
 
   const handleOpenNewUserModal = () => {
     resetForm()
+    setFieldErrors({})
     setIsModalOpen(true)
   }
 
@@ -63,16 +65,24 @@ function UsersPage() {
     setPassword('')
     setRole(u.role === 'COMPANY_ADMIN' ? 'COMPANY_ADMIN' : 'WAITER')
     setActive(!!u.active)
+    setFieldErrors({})
     setIsModalOpen(true)
   }
 
   const handleCloseModal = () => {
     setErrorMessage(null)
+    setFieldErrors({})
     setIsModalOpen(false)
   }
 
   const handleSubmit = () => {
     if (!companyId) return
+    const errors: { name?: string; email?: string; password?: string } = {}
+    if (!name.trim()) errors.name = 'Preencha o nome'
+    if (!email.trim()) errors.email = 'Preencha o e-mail'
+    if (!editingUserId && !password.trim()) errors.password = 'Preencha a senha'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
     setErrorMessage(null)
 
     if (editingUserId) {
@@ -189,19 +199,31 @@ function UsersPage() {
           <AppInput
             label="Nome"
             value={name}
-            onChange={(event) => setName(event.currentTarget.value)}
+            onChange={(event) => {
+              setName(event.currentTarget.value)
+              if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }))
+            }}
+            error={fieldErrors.name}
           />
           <AppInput
             label="Email"
             value={email}
-            onChange={(event) => setEmail(event.currentTarget.value)}
+            onChange={(event) => {
+              setEmail(event.currentTarget.value)
+              if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }))
+            }}
+            error={fieldErrors.email}
           />
           {!editingUserId && (
             <AppInput
               label="Senha"
               type="password"
               value={password}
-              onChange={(event) => setPassword(event.currentTarget.value)}
+              onChange={(event) => {
+                setPassword(event.currentTarget.value)
+                if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }))
+              }}
+              error={fieldErrors.password}
             />
           )}
           {editingUserId && (
