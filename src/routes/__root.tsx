@@ -1,8 +1,9 @@
-import { createRootRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
+import { createRootRoute, Link, Outlet, useRouter, useRouterState } from '@tanstack/react-router'
 import { AppShell, Burger, Group, NavLink, Title, Text, ActionIcon, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { Icon } from '@/components/icons'
 import { useAuthStore } from '@/store/auth'
+import { useEffect } from 'react'
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -15,6 +16,13 @@ function RootComponent() {
   const isAuthenticated = !!user
   const routerState = useRouterState()
   const isLoginRoute = routerState.location.pathname === '/login'
+   const router = useRouter()
+
+  useEffect(() => {
+    if (!isAuthenticated && !isLoginRoute) {
+      router.navigate({ to: '/login' })
+    }
+  }, [isAuthenticated, isLoginRoute, router])
 
   return (
     <AppShell
@@ -58,17 +66,34 @@ function RootComponent() {
             leftSection={<Icon name="home" size={20} />}
           />
 
-          <NavLink
-            component={Link}
-            to="/companies"
-            label="Empresas"
-            leftSection={<Icon name="building" size={20} />}
-          />
+          {user?.role === 'SUPER_ADMIN' && (
+            <NavLink
+              component={Link}
+              to="/companies"
+              label="Empresas"
+              leftSection={<Icon name="building" size={20} />}
+            />
+          )}
+
+          {user?.role === 'COMPANY_ADMIN' && (
+            <NavLink
+              component={Link}
+              to="/users"
+              label="Usuários"
+              leftSection={<Icon name="building" size={20} />}
+            />
+          )}
 
           <NavLink
             component={Link}
             to="/inventory"
             label="Estoque"
+            leftSection={<Icon name="package" size={20} />}
+          />
+          <NavLink
+            component={Link}
+            to="/orders"
+            label="Pedidos"
             leftSection={<Icon name="package" size={20} />}
           />
           <NavLink

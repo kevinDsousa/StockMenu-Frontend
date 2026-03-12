@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { AppInput, AppPasswordInput, Button } from '@/components/ui'
 import { useLogin } from '@/hooks'
+import { extractApiErrorMessage } from '@/utils/api-error'
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -35,11 +36,7 @@ function LoginPage() {
       await mutateAsync(parsed.data)
       router.navigate({ to: '/' })
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Falha ao efetuar login.'
-      setFormError(message)
+      setFormError(extractApiErrorMessage(error, 'Falha ao efetuar login.'))
     }
   }
 

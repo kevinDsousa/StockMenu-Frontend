@@ -1,6 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Avatar, Badge, Card as MantineCard, Group, Loader, Stack, Text } from '@mantine/core'
-import { PageContainer } from '@/components'
+import {
+  Avatar,
+  Badge,
+  Card as MantineCard,
+  Group,
+  ScrollArea,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core'
+import { AppLoader, PageContainer } from '@/components'
 import { useAuthStore } from '@/store/auth'
 import { usePrimaryProducts } from '@/hooks'
 import { TABLE_OPEN_PASTEL, TABLE_REQUESTING_CLOSE_PASTEL } from '@/theme/colors'
@@ -11,67 +20,151 @@ export const Route = createFileRoute('/menu')({
 
 function MenuPage() {
   const user = useAuthStore((state) => state.user)
-  const { data: primaryProducts, isLoading } = usePrimaryProducts(user?.companyId ?? undefined)
+  const { data, isLoading } = usePrimaryProducts(user?.companyId ?? undefined)
+  const primaryProducts = Array.isArray(data) ? data : (data as any)?.data ?? []
 
   return (
     <PageContainer title="Cardápio">
-      {isLoading && (
-        <Group justify="center" my="lg">
-          <Loader />
-        </Group>
-      )}
+      {isLoading && <AppLoader />}
 
-      {!isLoading && (!primaryProducts || primaryProducts.length === 0) && (
-        <Text c="dimmed">Nenhum produto cadastrado para esta empresa.</Text>
-      )}
+      {!isLoading && (
+        <Group align="stretch" gap="lg">
+          <MantineCard
+            radius="lg"
+            p="xl"
+            style={{
+              flex: 1,
+              minHeight: 320,
+              background:
+                'linear-gradient(135deg, rgba(34,139,230,0.9), rgba(64,224,208,0.9))',
+              color: 'white',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <Stack justify="space-between" style={{ height: '100%' }}>
+              <Stack gap="xs">
+                <Title order={2} c="white">
+                  Seu cardápio digital
+                </Title>
+                <Text size="sm" c="rgba(255,255,255,0.85)">
+                  Visualize rapidamente os itens mais importantes do cardápio, com
+                  alertas de estoque baixo e validade, em um layout otimizado para o salão.
+                </Text>
+              </Stack>
 
-      {!isLoading && primaryProducts && primaryProducts.length > 0 && (
-        <Stack gap="sm">
-          {primaryProducts.map((item) => {
-            const lowStock = item.isStockLow
-            const expired = item.isExpired
-            const expiringSoon = item.isExpiringSoon
-
-            return (
-              <MantineCard
-                key={item.id}
-                withBorder
-                radius="md"
-                style={{
-                  backgroundColor: expired
-                    ? TABLE_REQUESTING_CLOSE_PASTEL
-                    : TABLE_OPEN_PASTEL,
-                }}
-              >
-                <Group align="flex-start" gap="md">
-                  <Avatar
-                    size={64}
-                    radius="md"
-                    src={item.imageUrl ?? undefined}
-                    alt={item.name}
-                  >
-                    {item.name.charAt(0)}
-                  </Avatar>
-                  <Stack gap={4} style={{ flex: 1 }}>
-                    <Group justify="space-between">
-                      <Text fw={600}>{item.name}</Text>
-                      <Group gap={4}>
-                        {lowStock && <Badge color="yellow">Em baixa</Badge>}
-                        {expired && <Badge color="red">Vencido</Badge>}
-                        {!expired && expiringSoon && (
-                          <Badge color="orange">Vencendo</Badge>
-                        )}
-                      </Group>
-                    </Group>
-                    <Text size="sm" c="dimmed">
-                      Estoque atual: {item.currentStock} {item.unit.toLowerCase()}
-                    </Text>
-                  </Stack>
+              <Stack gap="xs">
+                <Text size="xs" c="rgba(255,255,255,0.75)" fw={500}>
+                  Destaques rápidos
+                </Text>
+                <Group gap="xs">
+                  <Badge color="yellow" variant="light">
+                    Em baixa
+                  </Badge>
+                  <Badge color="red" variant="light">
+                    Vencido
+                  </Badge>
+                  <Badge color="orange" variant="light">
+                    Vencendo
+                  </Badge>
                 </Group>
-              </MantineCard>
-            )
-          })}
-        </Stack>
+                <Text size="xs" c="rgba(255,255,255,0.75)">
+                  Use estes status para decidir o que priorizar nas vendas e reposições.
+                </Text>
+              </Stack>
+            </Stack>
+          </MantineCard>
+
+          <MantineCard
+            radius="lg"
+            p="md"
+            withBorder
+            style={{
+              flex: 1.2,
+              maxHeight: 460,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Group justify="space-between" mb="sm">
+              <Title order={4}>Itens do cardápio</Title>
+              <Text size="xs" c="dimmed">
+                {primaryProducts.length} item(s)
+              </Text>
+            </Group>
+
+            <ScrollArea style={{ flex: 1 }}>
+              {primaryProducts.length === 0 ? (
+                <Group justify="center" my="xl">
+                  <Text c="dimmed" size="sm">
+                    Nenhum item de cardápio cadastrado para esta empresa.
+                  </Text>
+                </Group>
+              ) : (
+                <Stack gap="sm">
+                  {primaryProducts.map((item) => {
+                    const lowStock = item.isStockLow
+                    const expired = item.isExpired
+                    const expiringSoon = item.isExpiringSoon
+
+                    return (
+                      <MantineCard
+                        key={item.id}
+                        withBorder
+                        radius="md"
+                        shadow="xs"
+                        style={{
+                          backgroundColor: expired
+                            ? TABLE_REQUESTING_CLOSE_PASTEL
+                            : TABLE_OPEN_PASTEL,
+                          transition: 'transform 120ms ease, box-shadow 120ms ease',
+                        }}
+                        onMouseEnter={(event) => {
+                          event.currentTarget.style.transform = 'translateY(-2px)'
+                          event.currentTarget.style.boxShadow =
+                            '0 8px 18px rgba(0,0,0,0.12)'
+                        }}
+                        onMouseLeave={(event) => {
+                          event.currentTarget.style.transform = 'none'
+                          event.currentTarget.style.boxShadow = 'none'
+                        }}
+                      >
+                        <Group align="flex-start" gap="md">
+                          <Avatar
+                            size={64}
+                            radius="md"
+                            src={item.imageUrl ?? undefined}
+                            alt={item.name}
+                          >
+                            {item.name.charAt(0)}
+                          </Avatar>
+                          <Stack gap={4} style={{ flex: 1 }}>
+                            <Group justify="space-between" align="flex-start">
+                              <Stack gap={2} style={{ flex: 1 }}>
+                                <Text fw={600}>{item.name}</Text>
+                                <Text size="xs" c="dimmed">
+                                  Estoque atual: {item.currentStock}{' '}
+                                  {item.unit.toLowerCase()}
+                                </Text>
+                              </Stack>
+                              <Group gap={4}>
+                                {lowStock && <Badge color="yellow">Em baixa</Badge>}
+                                {expired && <Badge color="red">Vencido</Badge>}
+                                {!expired && expiringSoon && (
+                                  <Badge color="orange">Vencendo</Badge>
+                                )}
+                              </Group>
+                            </Group>
+                          </Stack>
+                        </Group>
+                      </MantineCard>
+                    )
+                  })}
+                </Stack>
+              )}
+            </ScrollArea>
+          </MantineCard>
+        </Group>
       )}
     </PageContainer>
   )

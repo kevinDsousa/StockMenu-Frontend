@@ -1,6 +1,11 @@
 import { AppSideBar } from "@/components/ui/DefaultSideBar/AppSideBar"
-import { Text } from "@mantine/core"
-import { useOrders } from "@/hooks"
+import { AppModal, Button, AppError } from "@/components"
+import { Group, NumberInput, Select, Stack, Text } from "@mantine/core"
+import { useOrders, useCreateOrder, useTransferOrder, useVenueTables, useSplitVenueTable, useMergeVenueTables } from "@/hooks"
+import { useAuthStore } from "@/store/auth"
+import { useNavigate } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
+import { extractApiErrorMessage } from "@/utils/api-error"
 
 interface SiderVenueTablesProps {
   isOpen: boolean
@@ -10,8 +15,145 @@ interface SiderVenueTablesProps {
 
 export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesProps) => {
   const { data } = useOrders()
+  const { data: venueTables } = useVenueTables()
+  const createOrderMutation = useCreateOrder()
+  const transferOrderMutation = useTransferOrder()
+  const splitVenueTableMutation = useSplitVenueTable()
+  const mergeVenueTablesMutation = useMergeVenueTables()
+  const user = useAuthStore((state) => state.user)
+  const navigate = useNavigate()
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
+  const [isSplitModalOpen, setIsSplitModalOpen] = useState(false)
+  const [isMergeModalOpen, setIsMergeModalOpen] = useState(false)
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const [targetTableId, setTargetTableId] = useState<string | null>(null)
+  const [splitTableNumber, setSplitTableNumber] = useState<number | ''>('')
+  const [splitCapacity, setSplitCapacity] = useState<number | ''>('')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const allOrders = Array.isArray(data) ? data : (data as any)?.data ?? []
   const tableOrders = allOrders.filter((order: any) => order.tableId === tableId)
+  const tablesList = Array.isArray(venueTables) ? venueTables : (venueTables as any)?.data ?? []
+  const otherTables = Array.from(
+    new Map(
+      allOrders
+        .filter((order: any) => order.tableId && order.tableId !== tableId)
+        .map((order: any) => [order.tableId, order])
+    ).values()
+  )
+
+  useEffect(() => {
+    if (!isOpen) setErrorMessage(null)
+  }, [isOpen])
+
+  const handleOpenTransferModal = (orderId: string) => {
+    setSelectedOrderId(orderId)
+    setTargetTableId(null)
+    setIsTransferModalOpen(true)
+  }
+
+  const handleConfirmTransfer = () => {
+    if (!selectedOrderId || !targetTableId) return
+    setErrorMessage(null)
+    transferOrderMutation.mutate(
+      { orderId: selectedOrderId, targetTableId },
+      {
+        onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
+        onSuccess: () => {
+          setErrorMessage(null)
+          setIsTransferModalOpen(false)
+        },
+      }
+    )
+  }
+
+  const handleOpenSplitModal = () => {
+    setSplitTableNumber('')
+    setSplitCapacity('')
+    setIsSplitModalOpen(true)
+  }
+
+  const handleConfirmSplit = () => {
+    if (!tableId || !tableOrders.length) return
+    if (!splitTableNumber || splitTableNumber <= 0) return
+    setErrorMessage(null)
+    splitVenueTableMutation.mutate(
+      {
+        id: tableId,
+        dto: {
+          targets: [
+            {
+              tableNumber: Number(splitTableNumber),
+              capacity: splitCapacity ? Number(splitCapacity) : null,
+              orderIds: tableOrders.map((o: any) => o.id),
+            },
+          ],
+        },
+      },
+      {
+        onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
+        onSuccess: () => {
+          setErrorMessage(null)
+          setIsSplitModalOpen(false)
+        },
+      }
+    )
+  }
+
+  const handleOpenMergeModal = () => {
+    setTargetTableId(null)
+    setIsMergeModalOpen(true)
+  }
+
+  const handleConfirmMerge = () => {
+    if (!user?.companyId || !tableId || !targetTableId) return
+    setErrorMessage(null)
+    mergeVenueTablesMutation.mutate(
+      {
+        companyId: user.companyId,
+        sourceTableIds: [tableId],
+        targetTableId,
+      },
+      {
+        onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
+        onSuccess: () => {
+          setErrorMessage(null)
+          setIsMergeModalOpen(false)
+        },
+      }
+    )
+  }
+
+  const handleOpenOrder = () => {
+    if (!tableId || !user?.companyId) return
+
+    setErrorMessage(null)
+    createOrderMutation.mutate(
+      {
+        companyId: user.companyId,
+        tableId,
+        paymentMethodId: null,
+        type: 'TABLE',
+        customerName: null,
+        deliveryAddress: null,
+        totalAmount: 0,
+        invoiced: false,
+      },
+      {
+        onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
+        onSuccess: (createdOrder: any) => {
+          const order = createdOrder && !Array.isArray(createdOrder) && createdOrder.data
+            ? createdOrder.data
+            : createdOrder
+          const id = order?.id
+          if (id) {
+            setErrorMessage(null)
+            navigate({ to: '/orders/$orderId', params: { orderId: id } })
+            onClose()
+          }
+        },
+      }
+    )
+  }
 
   return (
     <AppSideBar
@@ -20,6 +162,11 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
       isOpen={isOpen}
       onClose={onClose}
     >
+      {errorMessage && (
+        <Stack gap="xs" mb="sm">
+          <AppError message={errorMessage} />
+        </Stack>
+      )}
       {!tableId && (
         <Text size="sm" c="dimmed">
           Selecione uma mesa para ver os detalhes.
@@ -27,9 +174,18 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
       )}
 
       {tableId && tableOrders.length === 0 && (
-        <Text size="sm" c="dimmed">
-          Nenhum pedido aberto para esta mesa.
-        </Text>
+        <div>
+          <Text size="sm" c="dimmed" mb="sm">
+            Nenhum pedido aberto para esta mesa.
+          </Text>
+          <Button
+            size="xs"
+            loading={createOrderMutation.isPending}
+            onClick={handleOpenOrder}
+          >
+            Abrir pedido para esta mesa
+          </Button>
+        </div>
       )}
 
       {tableId && tableOrders.length > 0 && (
@@ -37,13 +193,123 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
           <Text size="sm" fw={500} mb="xs">
             Pedidos da mesa
           </Text>
-          {tableOrders.map((order) => (
-            <Text key={order.id} size="sm">
-              Pedido {order.id.slice(0, 8)} - Total: {order.totalAmount?.toFixed(2) ?? '0,00'}
-            </Text>
-          ))}
+          <Stack gap="xs">
+            {tableOrders.map((order: any) => (
+              <Group key={order.id} justify="space-between">
+                <Text size="sm">
+                  Pedido {order.id.slice(0, 8)} - Total: {order.totalAmount?.toFixed(2) ?? '0,00'}
+                </Text>
+                {otherTables.length > 0 && (
+                  <Button
+                    size="xs"
+                    variant="light"
+                    onClick={() => handleOpenTransferModal(order.id)}
+                  >
+                    Transferir
+                  </Button>
+                )}
+              </Group>
+            ))}
+          </Stack>
+          <Group justify="space-between" mt="md">
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={handleOpenSplitModal}
+            >
+              Dividir mesa
+            </Button>
+            {tablesList.length > 1 && (
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={handleOpenMergeModal}
+              >
+                Unificar mesa
+              </Button>
+            )}
+          </Group>
         </div>
       )}
+
+      <AppModal
+        opened={isTransferModalOpen}
+        title="Transferir pedido para outra mesa"
+        onClose={() => { setErrorMessage(null); setIsTransferModalOpen(false) }}
+        confirmLabel="Transferir"
+        onConfirm={handleConfirmTransfer}
+        loading={transferOrderMutation.isPending}
+      >
+        <Stack gap="sm">
+          {errorMessage && <AppError message={errorMessage} />}
+          <Select
+            label="Mesa destino"
+            placeholder="Selecione a mesa destino"
+            data={otherTables.map((order: any) => ({
+              value: order.tableId,
+              label: `Mesa ${order.tableId.slice(0, 8)}`,
+            }))}
+            value={targetTableId}
+            onChange={setTargetTableId}
+          />
+        </Stack>
+      </AppModal>
+
+      <AppModal
+        opened={isSplitModalOpen}
+        title="Dividir mesa"
+        onClose={() => { setErrorMessage(null); setIsSplitModalOpen(false) }}
+        confirmLabel="Confirmar divisão"
+        onConfirm={handleConfirmSplit}
+        loading={splitVenueTableMutation.isPending}
+      >
+        <Stack gap="sm">
+          {errorMessage && <AppError message={errorMessage} />}
+          <NumberInput
+            label="Número da nova mesa"
+            min={1}
+            value={splitTableNumber}
+            onChange={setSplitTableNumber}
+          />
+          <NumberInput
+            label="Capacidade da nova mesa (opcional)"
+            min={1}
+            value={splitCapacity}
+            onChange={setSplitCapacity}
+          />
+          <Text size="xs" c="dimmed">
+            Todos os pedidos desta mesa serão movidos para a nova mesa informada.
+          </Text>
+        </Stack>
+      </AppModal>
+
+      <AppModal
+        opened={isMergeModalOpen}
+        title="Unificar mesa"
+        onClose={() => { setErrorMessage(null); setIsMergeModalOpen(false) }}
+        confirmLabel="Unificar"
+        onConfirm={handleConfirmMerge}
+        loading={mergeVenueTablesMutation.isPending}
+      >
+        <Stack gap="sm">
+          {errorMessage && <AppError message={errorMessage} />}
+          <Select
+            label="Mesa destino"
+            placeholder="Selecione a mesa destino"
+            data={tablesList
+              .filter((t: any) => t.id !== tableId)
+              .map((t: any) => ({
+                value: t.id,
+                label: `Mesa ${t.tableNumber}`,
+              }))}
+            value={targetTableId}
+            onChange={setTargetTableId}
+          />
+          <Text size="xs" c="dimmed">
+            Todos os pedidos desta mesa serão movidos para a mesa selecionada.
+          </Text>
+        </Stack>
+      </AppModal>
     </AppSideBar>
   )
 }

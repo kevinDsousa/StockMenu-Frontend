@@ -5,6 +5,8 @@ export interface Company {
   cnpj: string
   whatsapp: string | null
   active: boolean
+  maxWaiters: number | null
+  canOperate: boolean
   createdAt: string
   updatedAt: string | null
   deletedAt: string | null

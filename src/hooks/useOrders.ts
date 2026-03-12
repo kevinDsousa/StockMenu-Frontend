@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as ordersApi from '@/api/orders'
-import type { CreateOrderDto, UpdateOrderDto } from '@/types/dto'
+import type { CreateOrderDto, UpdateOrderDto, OrderTransferDto } from '@/types/dto'
 
 const keys = {
   all: ['orders'] as const,
@@ -51,6 +51,17 @@ export function useDeleteOrder() {
     mutationFn: (id: string) => ordersApi.deleteOrder(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.all })
+    },
+  })
+}
+
+export function useTransferOrder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (dto: OrderTransferDto) => ordersApi.transferOrder(dto),
+    onSuccess: (_data, dto) => {
+      queryClient.invalidateQueries({ queryKey: keys.all })
+      queryClient.invalidateQueries({ queryKey: keys.detail(dto.orderId) })
     },
   })
 }

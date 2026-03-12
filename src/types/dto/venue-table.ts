@@ -15,4 +15,20 @@ export interface UpdateVenueTableDto {
   isActive?: boolean
 }
 
+export interface VenueTableSplitTargetDto {
+  tableNumber: number
+  capacity?: number | null
+  orderIds: string[]
+}
+
+export interface VenueTableSplitDto {
+  targets: VenueTableSplitTargetDto[]
+}
+
+export interface VenueTableMergeDto {
+  companyId: string
+  sourceTableIds: string[]
+  targetTableId?: string | null
+}
+
 export type VenueTableListResponse = VenueTable[]

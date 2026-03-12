@@ -21,4 +21,9 @@ export interface UpdateOrderDto {
   invoiced?: boolean
 }
 
+export interface OrderTransferDto {
+  orderId: string
+  targetTableId: string
+}
+
 export type OrderListResponse = Order[]

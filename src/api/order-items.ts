@@ -13,15 +13,20 @@ export async function getOrderItemById(orderId: string, id: string): Promise<Ord
 }
 
 export async function createOrderItem(dto: CreateOrderItemDto): Promise<OrderItem> {
-  const { data } = await apiClient.post<OrderItem>('/order-items', dto)
+  const { data } = await apiClient.post<OrderItem>('/orderItem', dto)
   return data
 }
 
 export async function updateOrderItem(id: string, dto: UpdateOrderItemDto): Promise<OrderItem> {
-  const { data } = await apiClient.patch<OrderItem>(`/order-items/${id}`, dto)
+  const { data } = await apiClient.patch<OrderItem>(`/orderItem/${id}`, dto)
   return data
 }
 
 export async function deleteOrderItem(id: string): Promise<void> {
-  await apiClient.delete(`/order-items/${id}`)
+  await apiClient.delete(`/orderItem/${id}`)
+}
+
+export async function cancelOrderItem(id: string): Promise<OrderItem> {
+  const { data } = await apiClient.patch<OrderItem>(`/orderItem/${id}/cancel`)
+  return data
 }
