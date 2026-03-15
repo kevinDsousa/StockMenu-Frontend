@@ -4,8 +4,7 @@ export interface CreateOrderItemDto {
   orderId: string
   productId: string
   quantity: number
-  unitPrice: number
-  totalPrice: number
+  unitPrice?: number | null
   customerName?: string | null
   observation?: string | null
   status?: string

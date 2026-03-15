@@ -2,6 +2,10 @@ export interface Product {
   id: string
   companyId: string
   primaryProductId: string
+  primaryProductName?: string
+  primaryProductStockEntryDate?: string | null
+  primaryProductStorageType?: string | null
+  primaryProductMaxStorageDays?: number | null
   name: string
   price: number
   sellUnit: string

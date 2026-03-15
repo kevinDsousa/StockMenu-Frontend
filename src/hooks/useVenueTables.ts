@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createVenueTable, deleteVenueTable, getVenueTables, mergeVenueTables, splitVenueTable, updateVenueTable } from '@/api/venue-tables'
+import { createVenueTable, deleteVenueTable, getVenueTables, mergeVenueTables, splitVenueTable, updateVenueTable, updateVenueTableStatus } from '@/api/venue-tables'
 import type { CreateVenueTableDto, UpdateVenueTableDto, VenueTableMergeDto, VenueTableSplitDto } from '@/types/dto'
 
 const keys = {
@@ -60,6 +60,17 @@ export function useMergeVenueTables() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (dto: VenueTableMergeDto) => mergeVenueTables(dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.all })
+    },
+  })
+}
+
+export function useUpdateVenueTableStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      updateVenueTableStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.all })
     },

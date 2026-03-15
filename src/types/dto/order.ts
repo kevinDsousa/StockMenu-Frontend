@@ -9,6 +9,7 @@ export interface CreateOrderDto {
   deliveryAddress?: string | null
   totalAmount?: number
   invoiced?: boolean
+  items: Array<{ productId: string; quantity: number; customerName?: string | null; observation?: string | null }>
 }
 
 export interface UpdateOrderDto {

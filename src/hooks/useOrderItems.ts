@@ -23,6 +23,7 @@ export function useCreateOrderItem() {
     onSuccess: (_data, dto) => {
       if (dto.orderId) {
         queryClient.invalidateQueries({ queryKey: keys.list(dto.orderId) })
+        queryClient.invalidateQueries({ queryKey: ['orders', 'detail', dto.orderId] })
       }
       queryClient.invalidateQueries({ queryKey: keys.all })
     },
@@ -36,6 +37,7 @@ export function useUpdateOrderItem() {
       orderItemsApi.updateOrderItem(id, dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.all })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
   })
 }
@@ -60,8 +62,10 @@ export function useCancelOrderItem(orderId: string | undefined) {
     onSuccess: () => {
       if (orderId) {
         queryClient.invalidateQueries({ queryKey: keys.list(orderId) })
+        queryClient.invalidateQueries({ queryKey: ['orders', 'detail', orderId] })
       }
       queryClient.invalidateQueries({ queryKey: keys.all })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
     },
   })
 }

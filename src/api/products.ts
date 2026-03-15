@@ -15,13 +15,22 @@ export async function getProductById(id: string): Promise<Product> {
   return unwrapApiData(data!)
 }
 
+function toProductRequestBody(
+  dto: CreateProductDto | UpdateProductDto
+): Record<string, unknown> {
+  const { isFractional, ...rest } = dto
+  return { ...rest, fractional: isFractional ?? false }
+}
+
 export async function createProduct(dto: CreateProductDto): Promise<Product> {
-  const { data } = await apiClient.post<ApiResponse<Product> | Product>('/product', dto)
+  const body = toProductRequestBody(dto)
+  const { data } = await apiClient.post<ApiResponse<Product> | Product>('/product', body)
   return unwrapApiData(data!)
 }
 
 export async function updateProduct(id: string, dto: UpdateProductDto): Promise<Product> {
-  const { data } = await apiClient.put<ApiResponse<Product> | Product>(`/product/${id}`, dto)
+  const body = toProductRequestBody(dto)
+  const { data } = await apiClient.put<ApiResponse<Product> | Product>(`/product/${id}`, body)
   return unwrapApiData(data!)
 }
 

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Badge, Group, Stack, Table, Text } from '@mantine/core'
-import { AppInput, AppLoader, AppModal, Button, PageContainer, AppError, AppSelect, AppSwitch } from '@/components'
-import { useUsers, useCreateUser, useUpdateUser } from '@/hooks'
+import { AppInput, AppLoader, AppModal, Button, PageContainer, AppError, AppSelect, AppSwitch, Icon } from '@/components'
+import { useUsers, useCreateUser, useUpdateUser, useCompany } from '@/hooks'
 import { useAuthStore } from '@/store/auth'
 import { useState } from 'react'
 import type { User } from '@/entities'
@@ -30,6 +30,7 @@ function UsersPage() {
   }
 
   const { data, isLoading } = useUsers(companyId)
+  const { data: company } = useCompany(companyId ?? undefined)
   const createUserMutation = useCreateUser()
   const updateUserMutation = useUpdateUser()
 
@@ -44,6 +45,9 @@ function UsersPage() {
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({})
 
   const users: User[] = data ?? []
+  const waiterCount = users.filter((u) => u.role === 'WAITER').length
+  const maxWaiters = company?.maxWaiters ?? null
+  const isWaiterLimitReached = maxWaiters != null && waiterCount >= maxWaiters
 
   const resetForm = () => {
     setEditingUserId(null)
@@ -132,6 +136,12 @@ function UsersPage() {
         <Text c="dimmed">
           Gestão de usuários (garçons e administradores) da empresa logada.
         </Text>
+        {maxWaiters != null && (
+          <Text size="sm" c={isWaiterLimitReached ? 'orange' : 'dimmed'}>
+            Garçons: {waiterCount} / {maxWaiters}
+            {isWaiterLimitReached && ' — Limite atingido. Entre em contato para ampliar.'}
+          </Text>
+        )}
         <Group justify="flex-start">
           <Button size="xs" onClick={handleOpenNewUserModal}>
             Novo usuário
@@ -174,7 +184,8 @@ function UsersPage() {
                 <Table.Td>
                   <Button
                     size="xs"
-                    variant="light"
+                    status="warning"
+                    leftSection={<Icon name="pencil" size={14} />}
                     onClick={() => handleOpenEditUserModal(u)}
                   >
                     Editar

@@ -6,6 +6,7 @@ export interface Company {
   whatsapp: string | null
   active: boolean
   maxWaiters: number | null
+  stockExpiringDays: number | null
   canOperate: boolean
   createdAt: string
   updatedAt: string | null

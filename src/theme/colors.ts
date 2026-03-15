@@ -11,6 +11,7 @@ export const STATUS_CLOSED = '#868e96'
 export const TABLE_OPEN_PASTEL = '#d3f9d8'
 export const TABLE_REQUESTING_ORDER_PASTEL = '#fff3bf'
 export const TABLE_REQUESTING_CLOSE_PASTEL = '#ffe0e0'
+export const TABLE_WAITING_BILL_PASTEL = '#ffecb3'
 export const TEXT_PRIMARY = '#212529'
 export const TEXT_SECONDARY = '#868e96'
 export const TEXT_DISABLED = '#ced4da'
@@ -35,6 +36,7 @@ export const themeColors = {
   tableOpenPastel: TABLE_OPEN_PASTEL,
   tableRequestingOrderPastel: TABLE_REQUESTING_ORDER_PASTEL,
   tableRequestingClosePastel: TABLE_REQUESTING_CLOSE_PASTEL,
+  tableWaitingBillPastel: TABLE_WAITING_BILL_PASTEL,
   textPrimary: TEXT_PRIMARY,
   textSecondary: TEXT_SECONDARY,
   textDisabled: TEXT_DISABLED,

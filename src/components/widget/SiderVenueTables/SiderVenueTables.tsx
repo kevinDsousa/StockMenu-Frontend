@@ -1,8 +1,9 @@
 import { AppSideBar } from "@/components/ui/DefaultSideBar/AppSideBar"
-import { AppModal, Button, AppError } from "@/components"
-import { Group, Stack, Text } from "@mantine/core"
+import { AppModal, Button, AppError, Icon } from "@/components"
+import { Badge, Group, Stack, Text } from "@mantine/core"
 import { AppNumberInput, AppSelect } from "@/components"
-import { useOrders, useCreateOrder, useTransferOrder, useVenueTables, useSplitVenueTable, useMergeVenueTables } from "@/hooks"
+import { useOrders, useCreateOrder, useCloseOrdersBatch, useTransferOrder, useVenueTables, useSplitVenueTable, useMergeVenueTables, useUpdateVenueTableStatus, useRegisterPayment, usePaymentMethodsList } from "@/hooks"
+import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "@/store/auth"
 import { useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
@@ -15,18 +16,28 @@ interface SiderVenueTablesProps {
   tableId: string | null
 }
 
+const orderDetailKey = (id: string) => ['orders', 'detail', id] as const
+
 export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesProps) => {
-  const { data } = useOrders()
-  const { data: venueTables } = useVenueTables()
+  const user = useAuthStore((state) => state.user)
+  const queryClient = useQueryClient()
+  const companyId = user?.companyId ?? undefined
+  const { data } = useOrders(companyId)
+  const { data: venueTables } = useVenueTables(companyId)
   const createOrderMutation = useCreateOrder()
+  const closeOrdersBatchMutation = useCloseOrdersBatch()
   const transferOrderMutation = useTransferOrder()
   const splitVenueTableMutation = useSplitVenueTable()
   const mergeVenueTablesMutation = useMergeVenueTables()
-  const user = useAuthStore((state) => state.user)
+  const updateVenueTableStatusMutation = useUpdateVenueTableStatus()
+  const registerPaymentMutation = useRegisterPayment()
+  const { data: paymentMethods = [] } = usePaymentMethodsList(companyId ?? null)
   const navigate = useNavigate()
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
   const [isSplitModalOpen, setIsSplitModalOpen] = useState(false)
   const [isMergeModalOpen, setIsMergeModalOpen] = useState(false)
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false)
+  const [payPaymentMethodId, setPayPaymentMethodId] = useState<string | null>(null)
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [targetTableId, setTargetTableId] = useState<string | null>(null)
   const [splitTableNumber, setSplitTableNumber] = useState<number | ''>('')
@@ -34,7 +45,15 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const allOrders: Order[] = data ?? []
   const tableOrders = allOrders.filter((order) => order.tableId === tableId)
+  const openOrders = tableOrders.filter((o) => !o.invoiced)
+  const totalOpen = openOrders.reduce((sum, o) => sum + (o.totalAmount ?? 0), 0)
+  const totalTable = tableOrders.reduce((sum, o) => sum + (o.totalAmount ?? 0), 0)
   const tablesList: VenueTable[] = venueTables ?? []
+  const currentTable = tableId ? tablesList.find((t) => t.id === tableId) : null
+  const isWaitingForBill = currentTable?.status === 'WAITING_FOR_BILL'
+  const allOrdersInvoiced = tableOrders.length > 0 && openOrders.length === 0
+  const canShowPayButton =
+    isWaitingForBill || (allOrdersInvoiced && currentTable != null && currentTable.status !== 'FREE')
   const otherTables = Array.from(
     new Map(
       allOrders
@@ -139,19 +158,58 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
         deliveryAddress: null,
         totalAmount: 0,
         invoiced: false,
+        items: [],
       },
       {
         onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
-        onSuccess: (createdOrder: Order) => {
-          const order = createdOrder && !Array.isArray(createdOrder) && createdOrder.data
-            ? createdOrder.data
-            : createdOrder
+        onSuccess: (orderOrResponse: Order | { data?: Order }) => {
+          const order = orderOrResponse && typeof orderOrResponse === 'object' && 'data' in orderOrResponse
+            ? (orderOrResponse as { data: Order }).data
+            : (orderOrResponse as Order)
           const id = order?.id
-          if (id) {
+          if (id && order) {
+            queryClient.setQueryData(orderDetailKey(id), order)
             setErrorMessage(null)
-            navigate({ to: '/orders/$orderId', params: { orderId: id } })
             onClose()
+            navigate({ to: '/orders/$orderId', params: { orderId: id } })
           }
+        },
+      }
+    )
+  }
+
+  const handleCloseTableBill = () => {
+    if (openOrders.length === 0) return
+    setErrorMessage(null)
+    closeOrdersBatchMutation.mutate(
+      { orderIds: openOrders.map((o) => o.id), tableId: tableId ?? undefined },
+      {
+        onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['orders'] })
+          queryClient.invalidateQueries({ queryKey: ['venue-tables'] })
+        },
+      }
+    )
+  }
+
+  const handleOpenPayModal = () => {
+    setPayPaymentMethodId(paymentMethods[0]?.id ?? null)
+    setErrorMessage(null)
+    setIsPayModalOpen(true)
+  }
+
+  const handleConfirmPay = () => {
+    if (!tableId) return
+    setErrorMessage(null)
+    registerPaymentMutation.mutate(
+      { tableId, paymentMethodId: payPaymentMethodId },
+      {
+        onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
+        onSuccess: () => {
+          setIsPayModalOpen(false)
+          queryClient.invalidateQueries({ queryKey: ['venue-tables'] })
+          queryClient.invalidateQueries({ queryKey: ['orders'] })
         },
       }
     )
@@ -175,63 +233,154 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
         </Text>
       )}
 
-      {tableId && tableOrders.length === 0 && (
-        <div>
-          <Text size="sm" c="dimmed" mb="sm">
-            Nenhum pedido aberto para esta mesa.
-          </Text>
-          <Button
-            size="xs"
-            loading={createOrderMutation.isPending}
-            onClick={handleOpenOrder}
-          >
-            Abrir pedido para esta mesa
-          </Button>
-        </div>
-      )}
-
-      {tableId && tableOrders.length > 0 && (
-        <div>
-          <Text size="sm" fw={500} mb="xs">
-            Pedidos da mesa
-          </Text>
+      {tableId && (
+        <Stack gap="md">
           <Stack gap="xs">
-            {tableOrders.map((order) => (
-              <Group key={order.id} justify="space-between">
-                <Text size="sm">
-                  Pedido {order.id.slice(0, 8)} - Total: {order.totalAmount?.toFixed(2) ?? '0,00'}
-                </Text>
-                {otherTables.length > 0 && (
-                  <Button
-                    size="xs"
-                    variant="light"
-                    onClick={() => handleOpenTransferModal(order.id)}
-                  >
-                    Transferir
-                  </Button>
-                )}
-              </Group>
-            ))}
-          </Stack>
-          <Group justify="space-between" mt="md">
             <Button
               size="xs"
-              variant="outline"
-              onClick={handleOpenSplitModal}
+              status="info"
+              leftSection={<Icon name="plus" size={16} />}
+              loading={createOrderMutation.isPending}
+              onClick={handleOpenOrder}
             >
-              Dividir mesa
+              Abrir pedido para esta mesa
             </Button>
-            {tablesList.length > 1 && (
+            {canShowPayButton && (
               <Button
                 size="xs"
-                variant="outline"
-                onClick={handleOpenMergeModal}
+                status="warning"
+                leftSection={<Icon name="currency" size={16} />}
+                loading={registerPaymentMutation.isPending}
+                onClick={handleOpenPayModal}
               >
-                Unificar mesa
+                Pagar conta
+              </Button>
+            )}
+          </Stack>
+          <Group gap="xs" justify="center">
+            {openOrders.length > 0 && (
+              <Button
+                size="xs"
+                status="success"
+                leftSection={<Icon name="currency" size={16} />}
+                loading={closeOrdersBatchMutation.isPending}
+                onClick={handleCloseTableBill}
+              >
+                Fechar conta da mesa
+              </Button>
+            )}
+            {currentTable && currentTable.status !== 'CALLING_WAITER' && currentTable.status !== 'FREE' && (
+              <Button
+                size="xs"
+                status="secondary"
+                variant="light"
+                leftSection={<Icon name="menu" size={16} />}
+                loading={updateVenueTableStatusMutation.isPending}
+                onClick={() =>
+                  updateVenueTableStatusMutation.mutate(
+                    { id: tableId!, status: 'CALLING_WAITER' },
+                    { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['venue-tables'] }) }
+                  )
+                }
+              >
+                Cliente chamou garçom
+              </Button>
+            )}
+            {currentTable?.status === 'CALLING_WAITER' && (
+              <Button
+                size="xs"
+                status="info"
+                variant="light"
+                leftSection={<Icon name="menu" size={16} />}
+                loading={updateVenueTableStatusMutation.isPending}
+                onClick={() =>
+                  updateVenueTableStatusMutation.mutate(
+                    { id: tableId!, status: 'OCCUPIED' },
+                    { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['venue-tables'] }) }
+                  )
+                }
+              >
+                Marcar como atendido
               </Button>
             )}
           </Group>
-        </div>
+
+          {tableOrders.length === 0 && !canShowPayButton ? (
+            <Text size="sm" c="dimmed">
+              Nenhum pedido nesta mesa.
+            </Text>
+          ) : (
+            <>
+              <Text size="sm" fw={500}>
+                Pedidos da mesa
+              </Text>
+              <Stack gap="xs">
+                {tableOrders.map((order) => (
+                  <Group key={order.id} justify="space-between" wrap="nowrap">
+                    <Stack gap={2}>
+                      <Text size="sm">
+                        Pedido {order.id.slice(0, 8)}
+                      </Text>
+                      <Text size="sm" fw={600}>
+                        R$ {order.totalAmount != null ? order.totalAmount.toFixed(2) : '0,00'}
+                      </Text>
+                    </Stack>
+                    <Group gap="xs">
+                      <Badge size="sm" color={order.invoiced ? 'green' : 'yellow'}>
+                        {order.invoiced ? 'Faturado' : 'Em aberto'}
+                      </Badge>
+                      {!order.invoiced && otherTables.length > 0 && (
+                        <Button
+                          size="xs"
+                          status="info"
+                          variant="light"
+                          leftSection={<Icon name="transfer" size={14} />}
+                          onClick={() => handleOpenTransferModal(order.id)}
+                        >
+                          Transferir
+                        </Button>
+                      )}
+                    </Group>
+                  </Group>
+                ))}
+              </Stack>
+              {openOrders.length > 0 && (
+                <Text size="sm" fw={600}>
+                  Total em aberto: R$ {totalOpen.toFixed(2)}
+                </Text>
+              )}
+              {tableOrders.length > 0 && (
+                <Text size="sm" fw={600}>
+                  Total da conta: R$ {totalTable.toFixed(2)}
+                </Text>
+              )}
+              <Group gap="xs" justify="center">
+                <Button
+                  size="xs"
+                  status="warning"
+                  variant="light"
+                  leftSection={<Icon name="split" size={16} />}
+                  onClick={handleOpenSplitModal}
+                  disabled={tableOrders.length > 0 && openOrders.length === 0}
+                >
+                  Dividir mesa
+                </Button>
+                {tablesList.length > 1 && (
+                  <Button
+                    size="xs"
+                    status="secondary"
+                    variant="light"
+                    leftSection={<Icon name="merge" size={16} />}
+                    onClick={handleOpenMergeModal}
+                    disabled={tableOrders.length > 0 && openOrders.length === 0}
+                  >
+                    Unificar mesa
+                  </Button>
+                )}
+              </Group>
+            </>
+          )}
+        </Stack>
       )}
 
       <AppModal
@@ -281,6 +430,32 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
           />
           <Text size="xs" c="dimmed">
             Todos os pedidos desta mesa serão movidos para a nova mesa informada.
+          </Text>
+        </Stack>
+      </AppModal>
+
+      <AppModal
+        opened={isPayModalOpen}
+        title="Pagar conta"
+        onClose={() => { setErrorMessage(null); setIsPayModalOpen(false) }}
+        confirmLabel="Confirmar pagamento"
+        onConfirm={handleConfirmPay}
+        loading={registerPaymentMutation.isPending}
+      >
+        <Stack gap="sm">
+          {errorMessage && <AppError message={errorMessage} />}
+          <Text size="sm" fw={600}>
+            Total da conta: R$ {totalTable.toFixed(2)}
+          </Text>
+          <AppSelect
+            label="Forma de pagamento"
+            placeholder="Selecione (opcional)"
+            data={paymentMethods.map((pm) => ({ value: pm.id, label: pm.name }))}
+            value={payPaymentMethodId}
+            onChange={setPayPaymentMethodId}
+          />
+          <Text size="xs" c="dimmed">
+            Ao confirmar, o pagamento será registrado no histórico e a mesa será liberada.
           </Text>
         </Stack>
       </AppModal>

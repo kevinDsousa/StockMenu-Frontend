@@ -5,6 +5,16 @@ import {
   IconSun,
   IconMoon,
   IconSettings,
+  IconRuler2,
+  IconMenu2,
+  IconCurrencyDollar,
+  IconPencil,
+  IconTrash,
+  IconPlus,
+  IconArrowsExchange,
+  IconArrowsSplit,
+  IconStack2,
+  IconHistory,
   type Icon as TablerIconType,
 } from '@tabler/icons-react'
 
@@ -15,6 +25,16 @@ export const iconNames = [
   'sun',
   'moon',
   'settings',
+  'ruler',
+  'menu',
+  'currency',
+  'pencil',
+  'trash',
+  'plus',
+  'transfer',
+  'split',
+  'merge',
+  'history',
 ] as const
 
 export type IconName = (typeof iconNames)[number]
@@ -26,16 +46,34 @@ const iconMap: Record<IconName, TablerIconType> = {
   sun: IconSun,
   moon: IconMoon,
   settings: IconSettings,
+  ruler: IconRuler2,
+  menu: IconMenu2,
+  currency: IconCurrencyDollar,
+  pencil: IconPencil,
+  trash: IconTrash,
+  plus: IconPlus,
+  transfer: IconArrowsExchange,
+  split: IconArrowsSplit,
+  merge: IconStack2,
+  history: IconHistory,
 }
 
 export interface IconProps {
   name: IconName
   size?: number
   stroke?: number
+  color?: string
   className?: string
 }
 
-export function Icon({ name, size = 24, stroke = 1.5, className }: IconProps) {
+export function Icon({ name, size = 24, stroke = 1.5, color, className }: IconProps) {
   const TablerIcon = iconMap[name]
-  return <TablerIcon size={size} stroke={stroke} className={className} />
+  return (
+    <TablerIcon
+      size={size}
+      stroke={stroke}
+      color={color}
+      className={className}
+    />
+  )
 }

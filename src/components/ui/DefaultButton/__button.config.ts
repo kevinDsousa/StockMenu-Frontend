@@ -2,7 +2,7 @@
 // TIPAGENS
 // =============================================================================
 
-export type ButtonStatus = 'default' | 'success' | 'danger' | 'warning' | 'info';
+export type ButtonStatus = 'default' | 'secondary' | 'success' | 'danger' | 'warning' | 'info';
 
 export interface ButtonStyleConfig {
   backgroundColor?: string;
@@ -14,7 +14,6 @@ export interface ButtonStyleConfig {
 
 export interface AppButtonProps {
   status?: ButtonStatus;
-  /** Override pontual de qualquer token visual */
   styleConfig?: ButtonStyleConfig;
 }
 
@@ -30,6 +29,13 @@ const STATUS_STYLE_MAP: Record<ButtonStatus, ButtonStyleConfig> = {
     hoverColor: 'var(--mantine-primary-color-filled-hover)',
     disabledBackgroundColor: 'var(--mantine-color-gray-3)',
     disabledTextColor: 'var(--mantine-color-gray-6)',
+  },
+  secondary: {
+    backgroundColor: 'var(--mantine-color-default-hover)',
+    textColor: 'var(--mantine-color-text)',
+    hoverColor: 'var(--mantine-color-default-border)',
+    disabledBackgroundColor: 'var(--mantine-color-gray-1)',
+    disabledTextColor: 'var(--mantine-color-gray-5)',
   },
   success: {
     backgroundColor: 'var(--mantine-color-green-6)',

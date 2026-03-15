@@ -15,6 +15,7 @@ export interface UpdateCompanyDto {
   whatsapp?: string | null
   active?: boolean
   maxWaiters?: number | null
+  stockExpiringDays?: number | null
 }
 
 export type CompanyListResponse = Company[]

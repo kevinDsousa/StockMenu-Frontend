@@ -12,8 +12,8 @@ import {
 import { Card } from '@/components'
 import { AppLoader, PageContainer } from '@/components'
 import { useAuthStore } from '@/store/auth'
-import { usePrimaryProducts } from '@/hooks'
-import type { PrimaryProduct } from '@/entities'
+import { useProducts } from '@/hooks'
+import type { Product } from '@/entities'
 import { TABLE_OPEN_PASTEL, TABLE_REQUESTING_CLOSE_PASTEL } from '@/theme/colors'
 import { getCompanyIdForData, getNoCompanyMessage, mustUseOwnCompany } from '@/utils/permissions'
 
@@ -25,8 +25,8 @@ function MenuPage() {
   const user = useAuthStore((state) => state.user)
   const companyId = getCompanyIdForData(user)
   const needsCompany = mustUseOwnCompany(user?.role) && !companyId
-  const { data, isLoading } = usePrimaryProducts(needsCompany ? undefined : companyId)
-  const primaryProducts: PrimaryProduct[] = data ?? []
+  const { data, isLoading } = useProducts(needsCompany ? undefined : companyId)
+  const products: Product[] = data ?? []
 
   if (needsCompany) {
     return (
@@ -106,23 +106,22 @@ function MenuPage() {
             <Group justify="space-between" mb="sm">
               <Title order={4}>Itens do cardápio</Title>
               <Text size="xs" c="dimmed">
-                {primaryProducts.length} item(s)
+                {products.length} item(s)
               </Text>
             </Group>
 
             <ScrollArea style={{ flex: 1 }}>
-              {primaryProducts.length === 0 ? (
+              {products.length === 0 ? (
                 <Group justify="center" my="xl">
                   <Text c="dimmed" size="sm">
-                    Nenhum item de cardápio cadastrado para esta empresa.
+                    Nenhum item de cardápio cadastrado. Cadastre produtos em Estoque → Produtos (cardápio).
                   </Text>
                 </Group>
               ) : (
                 <Stack gap="sm">
-                  {primaryProducts.map((item: PrimaryProduct) => {
-                    const lowStock = item.isStockLow
+                  {products.filter((p) => p.active).map((item: Product) => {
+                    const lowStock = item.stockLow
                     const expired = item.isExpired
-                    const expiringSoon = item.isExpiringSoon
 
                     return (
                       <MantineCard
@@ -160,16 +159,18 @@ function MenuPage() {
                               <Stack gap={2} style={{ flex: 1 }}>
                                 <Text fw={600}>{item.name}</Text>
                                 <Text size="xs" c="dimmed">
-                                  Estoque atual: {item.currentStock}{' '}
-                                  {item.unit.toLowerCase()}
+                                  {typeof item.price === 'number'
+                                    ? item.price.toLocaleString('pt-BR', {
+                                        style: 'currency',
+                                        currency: 'BRL',
+                                      })
+                                    : item.price}{' '}
+                                  · {item.sellUnit}
                                 </Text>
                               </Stack>
                               <Group gap={4}>
-                                {lowStock && <Badge color="yellow">Em baixa</Badge>}
+                                {lowStock && <Badge color="yellow">Estoque baixo</Badge>}
                                 {expired && <Badge color="red">Vencido</Badge>}
-                                {!expired && expiringSoon && (
-                                  <Badge color="orange">Vencendo</Badge>
-                                )}
                               </Group>
                             </Group>
                           </Stack>

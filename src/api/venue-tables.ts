@@ -34,3 +34,8 @@ export async function mergeVenueTables(dto: VenueTableMergeDto): Promise<VenueTa
   return unwrapApiData(data!)
 }
 
+export async function updateVenueTableStatus(id: string, status: string): Promise<VenueTable> {
+  const { data } = await apiClient.patch<ApiResponse<VenueTable> | VenueTable>(`/venueTable/${id}/status`, { status })
+  return unwrapApiData(data!)
+}
+

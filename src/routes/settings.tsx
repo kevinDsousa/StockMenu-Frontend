@@ -4,12 +4,14 @@ import {
   AppInput,
   AppLoader,
   AppModal,
+  AppNumberInput,
   AppSwitch,
   Button,
   Card,
+  Icon,
   PageContainer,
 } from '@/components'
-import { Badge, Group, Stack, Table, Tabs, Text } from '@mantine/core'
+import { Badge, Group, Stack, Table, Tabs, Text, useMantineTheme } from '@mantine/core'
 import {
   useCreateUnitMeasure,
   useDeleteUnitMeasure,
@@ -19,10 +21,12 @@ import {
   useCreatePaymentMethod,
   useUpdatePaymentMethod,
   useDeletePaymentMethod,
+  useCompany,
+  useUpdateCompany,
 } from '@/hooks'
 import { extractApiErrorMessage } from '@/utils/api-error'
 import { ConfirmDeleteModal } from '@/components/ui/DefaultModal/ConfirmDeleteModal'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { getCompanyIdForData, getNoCompanyMessage } from '@/utils/permissions'
 
@@ -31,14 +35,25 @@ export const Route = createFileRoute('/settings')({
 })
 
 function SettingsPage() {
+  const theme = useMantineTheme()
+  const primaryColor = theme.colors[theme.primaryColor]?.[6] ?? theme.colors.blue[6]
+
   return (
     <PageContainer title="Configurações">
       <Tabs defaultValue="units">
         <Tabs.List mb="md">
-          <Tabs.Tab value="units">Unidades</Tabs.Tab>
-          <Tabs.Tab value="stock">Estoque</Tabs.Tab>
-          <Tabs.Tab value="menu">Cardápio</Tabs.Tab>
-          <Tabs.Tab value="payments">Pagamentos</Tabs.Tab>
+          <Tabs.Tab value="units" leftSection={<Icon name="ruler" size={18} color={primaryColor} />}>
+            Unidades
+          </Tabs.Tab>
+          <Tabs.Tab value="stock" leftSection={<Icon name="package" size={18} color={primaryColor} />}>
+            Estoque
+          </Tabs.Tab>
+          <Tabs.Tab value="menu" leftSection={<Icon name="menu" size={18} color={primaryColor} />}>
+            Cardápio
+          </Tabs.Tab>
+          <Tabs.Tab value="payments" leftSection={<Icon name="currency" size={18} color={primaryColor} />}>
+            Pagamentos
+          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="units">
@@ -46,10 +61,7 @@ function SettingsPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="stock">
-          <Text c="dimmed" size="sm">
-            Configurações de estoque (ex.: dias para considerar produto vencendo)
-            serão definidas aqui.
-          </Text>
+          <StockConfigTab />
         </Tabs.Panel>
 
         <Tabs.Panel value="menu">
@@ -64,6 +76,88 @@ function SettingsPage() {
         </Tabs.Panel>
       </Tabs>
     </PageContainer>
+  )
+}
+
+function StockConfigTab() {
+  const user = useAuthStore((state) => state.user)
+  const companyId = getCompanyIdForData(user)
+  const { data: company, isLoading } = useCompany(companyId ?? undefined)
+  const updateCompanyMutation = useUpdateCompany()
+  const [days, setDays] = useState<number | ''>(7)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (company?.stockExpiringDays != null) {
+      setDays(company.stockExpiringDays)
+    }
+  }, [company?.stockExpiringDays])
+
+  if (!companyId) {
+    return (
+      <Card>
+        <Text c="dimmed" size="sm">
+          {getNoCompanyMessage()}
+        </Text>
+      </Card>
+    )
+  }
+
+  const handleSave = () => {
+    const value = days === '' ? 7 : Number(days)
+    if (value < 1) return
+    if (!company) return
+    setErrorMessage(null)
+    updateCompanyMutation.mutate(
+      {
+        id: companyId,
+        dto: {
+          tradeName: company.tradeName,
+          corporateName: company.corporateName ?? undefined,
+          cnpj: company.cnpj,
+          whatsapp: company.whatsapp ?? undefined,
+          maxWaiters: company.maxWaiters ?? undefined,
+          stockExpiringDays: value,
+        },
+      },
+      {
+        onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
+        onSuccess: () => setErrorMessage(null),
+      }
+    )
+  }
+
+  if (isLoading) return <AppLoader />
+  const currentDays = company?.stockExpiringDays ?? 7
+
+  return (
+    <Stack gap="md">
+      <Text c="dimmed" size="sm">
+        Número de dias antes do vencimento para marcar o produto como &quot;Vencendo&quot; na tela de estoque.
+      </Text>
+      {errorMessage && <AppError message={errorMessage} />}
+      <Card>
+        <Stack gap="sm">
+          <AppNumberInput
+            label="Dias para considerar produto vencendo"
+            min={1}
+            value={days === '' && company ? currentDays : days}
+            onChange={(v) => setDays(v === '' ? '' : Number(v))}
+          />
+          <Group>
+            <Button
+              size="xs"
+              status="default"
+              leftSection={<Icon name="pencil" size={16} />}
+              loading={updateCompanyMutation.isPending}
+              onClick={handleSave}
+            >
+              Salvar
+            </Button>
+          </Group>
+        </Stack>
+      </Card>
+    </Stack>
   )
 }
 
@@ -171,7 +265,12 @@ function UnitsTab() {
       </Text>
 
       <Group>
-        <Button size="xs" onClick={openNew}>
+        <Button
+          size="xs"
+          status="default"
+          leftSection={<Icon name="plus" size={16} />}
+          onClick={openNew}
+        >
           Nova unidade
         </Button>
       </Group>
@@ -189,7 +288,7 @@ function UnitsTab() {
                 <Table.Th>Código</Table.Th>
                 <Table.Th>Descrição</Table.Th>
                 <Table.Th>Ativo</Table.Th>
-                <Table.Th>Ações</Table.Th>
+                <Table.Th style={{ width: 220, whiteSpace: 'nowrap' }}>Ações</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -214,15 +313,20 @@ function UnitsTab() {
                       {u.active ? 'Sim' : 'Não'}
                     </Badge>
                   </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <Button size="xs" variant="light" onClick={() => openEdit(u)}>
+                  <Table.Td style={{ width: 220, whiteSpace: 'nowrap' }}>
+                    <Group gap="xs" justify="center" wrap="nowrap">
+                      <Button
+                        size="xs"
+                        status="warning"
+                        leftSection={<Icon name="pencil" size={16} />}
+                        onClick={() => openEdit(u)}
+                      >
                         Editar
                       </Button>
                       <Button
                         size="xs"
-                        variant="subtle"
-                        color="red"
+                        status="danger"
+                        leftSection={<Icon name="trash" size={16} />}
                         loading={deleteMutation.isPending}
                         onClick={() => openDelete(u)}
                       >
@@ -420,7 +524,12 @@ function PaymentsTab() {
       </Text>
 
       <Group>
-        <Button size="xs" onClick={openNew}>
+        <Button
+          size="xs"
+          status="default"
+          leftSection={<Icon name="plus" size={16} />}
+          onClick={openNew}
+        >
           Nova forma de pagamento
         </Button>
       </Group>
@@ -439,7 +548,7 @@ function PaymentsTab() {
                 <Table.Th>Ativo</Table.Th>
                 <Table.Th>Permite entrega</Table.Th>
                 <Table.Th>Pagamento online</Table.Th>
-                <Table.Th>Ações</Table.Th>
+                <Table.Th style={{ width: 240, whiteSpace: 'nowrap' }}>Ações</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -472,15 +581,20 @@ function PaymentsTab() {
                       {p.onlinePayment ? 'Sim' : 'Não'}
                     </Badge>
                   </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      <Button size="xs" variant="light" onClick={() => openEdit(p)}>
+                  <Table.Td style={{ width: 240, whiteSpace: 'nowrap' }}>
+                    <Group gap="xs" justify="center" wrap="nowrap">
+                      <Button
+                        size="xs"
+                        status="warning"
+                        leftSection={<Icon name="pencil" size={16} />}
+                        onClick={() => openEdit(p)}
+                      >
                         Editar
                       </Button>
                       <Button
                         size="xs"
-                        variant="subtle"
-                        color="red"
+                        status="danger"
+                        leftSection={<Icon name="trash" size={16} />}
                         loading={deleteMutation.isPending}
                         onClick={() => openDelete(p)}
                       >

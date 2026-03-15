@@ -1,8 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { Badge, Group, Loader, Stack, Table, Text, Title } from '@mantine/core'
-import { PageContainer, Card, Button, AppInput, AppNumberInput, AppTextarea } from '@/components'
-import { useOrder, useOrderItems, useUpdateOrder, useCreateOrderItem, useCancelOrderItem, useUpdateOrderItem } from '@/hooks'
-import type { Order, OrderItem } from '@/entities'
+import { PageContainer, Card, Button, AppInput, AppNumberInput, AppTextarea, AppSelect } from '@/components'
+import { useOrder, useOrderItems, useCloseOrdersBatch, useCreateOrderItem, useCancelOrderItem, useUpdateOrderItem, useProducts } from '@/hooks'
+import type { Order, OrderItem, Product } from '@/entities'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/orders/$orderId')({
@@ -12,56 +12,61 @@ export const Route = createFileRoute('/orders/$orderId')({
 function OrderDetailPage() {
   const { orderId } = Route.useParams()
 
-  const [productId, setProductId] = useState('')
+  const [productId, setProductId] = useState<string | null>(null)
   const [quantity, setQuantity] = useState<number | ''>(1)
-  const [unitPrice, setUnitPrice] = useState<number | ''>(0)
+  const [unitPrice, setUnitPrice] = useState<number | ''>('')
   const [customerName, setCustomerName] = useState('')
   const [observation, setObservation] = useState('')
 
-  const {
-    data: orderData,
-    isLoading: isLoadingOrder,
-  } = useOrder(orderId)
+  const { data: orderData, isLoading: isLoadingOrder } = useOrder(orderId)
+  const { data: itemsData, isLoading: isLoadingItems } = useOrderItems(orderId)
+  const { data: productsData } = useProducts(orderData?.companyId)
 
-  const {
-    data: itemsData,
-    isLoading: isLoadingItems,
-  } = useOrderItems(orderId)
-
-  const updateOrderMutation = useUpdateOrder()
+  const closeOrdersBatchMutation = useCloseOrdersBatch()
   const createItemMutation = useCreateOrderItem()
   const cancelItemMutation = useCancelOrderItem(orderId)
   const updateItemMutation = useUpdateOrderItem()
 
   const order: Order | undefined = orderData
   const items: OrderItem[] = itemsData ?? []
+  const products: Product[] = productsData ?? []
 
   const isLoading = isLoadingOrder || isLoadingItems
+  const productOptions = products.map((p) => ({ value: p.id, label: `${p.name} — R$ ${Number(p.price).toFixed(2)}` }))
+  const selectedProduct = products.find((p) => p.id === productId)
+
+  const handleProductChange = (value: string | null) => {
+    setProductId(value)
+    if (value) {
+      const p = products.find((x) => x.id === value)
+      setUnitPrice(p != null ? Number(p.price) : '')
+    } else {
+      setUnitPrice('')
+    }
+  }
 
   const handleAddItem = () => {
-    if (!order) return
-    if (!productId || !quantity || !unitPrice) return
+    if (!order || !productId || !quantity || quantity < 1) return
 
     createItemMutation.mutate({
       orderId: order.id,
       productId,
       quantity: Number(quantity),
-      unitPrice: Number(unitPrice),
-      totalPrice: Number(quantity) * Number(unitPrice),
+      unitPrice: unitPrice !== '' && unitPrice != null ? Number(unitPrice) : undefined,
       customerName: customerName || null,
       observation: observation || null,
     })
 
-    setProductId('')
+    setProductId(null)
     setQuantity(1)
-    setUnitPrice(0)
+    setUnitPrice(selectedProduct != null ? Number(selectedProduct.price) : '')
     setCustomerName('')
     setObservation('')
   }
 
   const handleInvoiceOrder = () => {
     if (!order) return
-    updateOrderMutation.mutate({ id: order.id, dto: { invoiced: true } })
+    closeOrdersBatchMutation.mutate([order.id])
   }
 
   const handleCancelItem = (itemId: string) => {
@@ -73,7 +78,7 @@ function OrderDetailPage() {
   }
 
   return (
-    <PageContainer title="Detalhe do pedido">
+    <PageContainer title="Fazer pedido">
       {isLoading && (
         <Group justify="center" my="lg">
           <Loader />
@@ -81,17 +86,31 @@ function OrderDetailPage() {
       )}
 
       {!isLoading && !order && (
-        <Text c="dimmed">Pedido não encontrado.</Text>
+        <Stack gap="sm">
+          <Text c="dimmed">Pedido não encontrado.</Text>
+          <Button variant="light" component={Link} to="/orders">
+            Voltar à lista de pedidos
+          </Button>
+          <Button variant="subtle" component={Link} to="/">
+            Ir ao dashboard
+          </Button>
+        </Stack>
       )}
 
       {!isLoading && order && (
         <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Adicione os produtos abaixo. Depois você pode faturar o pedido ou fechar a conta da mesa no dashboard.
+          </Text>
           <Card>
             <Group justify="space-between" align="flex-start">
               <div>
                 <Title order={4}>Pedido {order.id.slice(0, 8)}</Title>
                 <Text size="sm" c="dimmed">
-                  Mesa: {order.tableId ? order.tableId.slice(0, 8) : '—'}
+                  Mesa: {order.tableNumber != null ? order.tableNumber : order.tableId ? order.tableId.slice(0, 8) : '—'}
+                </Text>
+                <Text size="sm" c="dimmed">
+                  Garçom: {order.createdByUserName ?? order.createdByUserId?.slice(0, 8) ?? '—'}
                 </Text>
                 <Text size="sm" c="dimmed">
                   Tipo: {order.type}
@@ -108,7 +127,7 @@ function OrderDetailPage() {
                 {!order.invoiced && (
                   <Button
                     size="xs"
-                    loading={updateOrderMutation.isPending}
+                    loading={closeOrdersBatchMutation.isPending}
                     onClick={handleInvoiceOrder}
                   >
                     Faturar pedido
@@ -123,11 +142,14 @@ function OrderDetailPage() {
               <div>
                 <Title order={5}>Novo item</Title>
                 <Group grow mb="sm" mt="xs">
-                  <AppInput
-                    label="Produto (ID)"
-                    placeholder="UUID do produto"
+                  <AppSelect
+                    label="Produto"
+                    placeholder="Selecione o produto"
+                    data={productOptions}
                     value={productId}
-                    onChange={(event) => setProductId(event.currentTarget.value)}
+                    onChange={handleProductChange}
+                    searchable
+                    clearable
                   />
                   <AppNumberInput
                     label="Quantidade"
@@ -194,7 +216,7 @@ function OrderDetailPage() {
                       {items.map((item) => (
                         <Table.Tr key={item.id}>
                           <Table.Td>
-                            <Text size="sm">{item.productId?.slice(0, 8)}</Text>
+                            <Text size="sm">{item.productName ?? item.productId?.slice(0, 8)}</Text>
                             {item.customerName && (
                               <Text size="xs" c="dimmed">
                                 {item.customerName}
@@ -215,11 +237,19 @@ function OrderDetailPage() {
                                 item.status === 'CANCELLED'
                                   ? 'red'
                                   : item.status === 'DELIVERED'
-                                  ? 'green'
-                                  : 'blue'
+                                    ? 'green'
+                                    : item.status === 'IN_PREPARATION'
+                                      ? 'orange'
+                                      : 'yellow'
                               }
                             >
-                              {item.status}
+                              {item.status === 'CANCELLED'
+                                ? 'Cancelado'
+                                : item.status === 'DELIVERED'
+                                  ? 'Entregue'
+                                  : item.status === 'IN_PREPARATION'
+                                    ? 'Em preparo'
+                                    : 'Pendente'}
                             </Badge>
                           </Table.Td>
                           <Table.Td>
@@ -227,6 +257,7 @@ function OrderDetailPage() {
                               <Button
                                 size="xs"
                                 variant="light"
+                                color="yellow"
                                 disabled={item.status === 'CANCELLED'}
                                 loading={updateItemMutation.isPending}
                                 onClick={() => handleChangeItemStatus(item.id, 'PENDING')}
@@ -236,6 +267,7 @@ function OrderDetailPage() {
                               <Button
                                 size="xs"
                                 variant="light"
+                                color="orange"
                                 disabled={item.status === 'CANCELLED'}
                                 loading={updateItemMutation.isPending}
                                 onClick={() => handleChangeItemStatus(item.id, 'IN_PREPARATION')}
@@ -245,6 +277,7 @@ function OrderDetailPage() {
                               <Button
                                 size="xs"
                                 variant="light"
+                                color="green"
                                 disabled={item.status === 'CANCELLED'}
                                 loading={updateItemMutation.isPending}
                                 onClick={() => handleChangeItemStatus(item.id, 'DELIVERED')}

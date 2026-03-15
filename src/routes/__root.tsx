@@ -90,12 +90,30 @@ function RootComponent() {
             to="/inventory"
             label="Estoque"
             leftSection={<Icon name="package" size={20} />}
-          />
+            defaultOpened
+          >
+            <NavLink
+              component={Link}
+              to="/inventory?tab=insumos"
+              label="Insumos"
+            />
+            <NavLink
+              component={Link}
+              to="/inventory?tab=produtos"
+              label="Produtos (cardápio)"
+            />
+          </NavLink>
           <NavLink
             component={Link}
             to="/settings"
             label="Configurações"
             leftSection={<Icon name="settings" size={20} />}
+          />
+          <NavLink
+            component={Link}
+            to="/history"
+            label="Histórico"
+            leftSection={<Icon name="history" size={20} />}
           />
           <NavLink
             component={Link}

@@ -1,4 +1,4 @@
-import { TABLE_OPEN_PASTEL, TABLE_REQUESTING_CLOSE_PASTEL, TABLE_REQUESTING_ORDER_PASTEL, TEXT_PRIMARY } from '@/theme';
+import { TABLE_OPEN_PASTEL, TABLE_REQUESTING_CLOSE_PASTEL, TABLE_REQUESTING_ORDER_PASTEL, TABLE_WAITING_BILL_PASTEL, TEXT_PRIMARY } from '@/theme';
 import type { MantineColorScheme } from '@mantine/core';
 import { createUseStyles } from 'react-jss';
 import type { MouseEvent } from 'react';
@@ -8,7 +8,7 @@ import type { MouseEvent } from 'react';
 // =============================================================================
 
 export type TableSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-export type TableStatus = 'open' | 'requesting_order' | 'requesting_close';
+export type TableStatus = 'open' | 'requesting_order' | 'requesting_close' | 'waiting_bill';
 
 /** Configuração de estilo para cada estado da mesa */
 export interface StatusStyleConfig {
@@ -60,6 +60,10 @@ export const statusVenueTableMap: Record<TableStatus, StatusStyleConfig> = {
   requesting_close: {
     ...defaultStatusStyle,
     backgroundColor: TABLE_REQUESTING_CLOSE_PASTEL,
+  },
+  waiting_bill: {
+    ...defaultStatusStyle,
+    backgroundColor: TABLE_WAITING_BILL_PASTEL,
   },
 };
 

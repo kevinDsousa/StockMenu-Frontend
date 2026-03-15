@@ -7,6 +7,9 @@ export interface PrimaryProduct {
   lowStockAlert: number | null
   expirationDate: string
   productType: string | null
+  stockEntryDate: string | null
+  storageType: string | null
+  maxStorageDays: number | null
   isStockLow?: boolean
   isExpired?: boolean
   isExpiringSoon?: boolean

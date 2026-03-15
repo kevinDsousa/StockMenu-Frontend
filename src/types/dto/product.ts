@@ -9,6 +9,8 @@ export interface CreateProductDto {
   isFractional?: boolean
   customExpirationDate?: string | null
   active?: boolean
+  image?: string | null
+  imageContentType?: string | null
 }
 
 export interface UpdateProductDto {
@@ -19,6 +21,8 @@ export interface UpdateProductDto {
   isFractional?: boolean
   customExpirationDate?: string | null
   active?: boolean
+  image?: string | null
+  imageContentType?: string | null
 }
 
 export type ProductListResponse = Product[]
