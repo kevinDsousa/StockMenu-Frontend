@@ -1,5 +1,6 @@
 export * from './useCompanies'
 export * from './useEnums'
+export * from './usePaymentMethods'
 export * from './usePrimaryProducts'
 export * from './useOrders'
 export * from './useLogin'

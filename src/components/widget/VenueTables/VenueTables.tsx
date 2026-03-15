@@ -3,7 +3,7 @@ import { Button } from '../../ui'
 import { statusVenueTableMap, useStyles } from '@/components/widget/VenueTables/VenueTable.config'
 import type { TableProps } from '@/components/widget/VenueTables/VenueTable.config'
 
-export const VenueTables = ({ tableName = 'Mesa', statusTable, tableNumber, onClick }: TableProps) => {
+export const VenueTables = ({ tableName = 'Mesa', statusTable, tableNumber, onClick, onContextMenu }: TableProps) => {
 
   const { colorScheme } = useMantineColorScheme()
 
@@ -16,6 +16,7 @@ export const VenueTables = ({ tableName = 'Mesa', statusTable, tableNumber, onCl
       size={statusConfig.size}
       radius={statusConfig.radius}
       onClick={onClick}
+      onContextMenu={onContextMenu}
       className={classes.button}
       styles={{
         root: {

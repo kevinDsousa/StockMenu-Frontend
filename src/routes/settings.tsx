@@ -4,20 +4,27 @@ import {
   AppInput,
   AppLoader,
   AppModal,
+  AppSwitch,
   Button,
   Card,
   PageContainer,
 } from '@/components'
-import { Badge, Group, Stack, Switch, Table, Tabs, Text } from '@mantine/core'
+import { Badge, Group, Stack, Table, Tabs, Text } from '@mantine/core'
 import {
   useCreateUnitMeasure,
   useDeleteUnitMeasure,
   useUnitMeasuresList,
   useUpdateUnitMeasure,
+  usePaymentMethodsList,
+  useCreatePaymentMethod,
+  useUpdatePaymentMethod,
+  useDeletePaymentMethod,
 } from '@/hooks'
 import { extractApiErrorMessage } from '@/utils/api-error'
 import { ConfirmDeleteModal } from '@/components/ui/DefaultModal/ConfirmDeleteModal'
 import { useState } from 'react'
+import { useAuthStore } from '@/store/auth'
+import { getCompanyIdForData, getNoCompanyMessage } from '@/utils/permissions'
 
 export const Route = createFileRoute('/settings')({
   component: SettingsPage,
@@ -53,9 +60,7 @@ function SettingsPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="payments">
-          <Text c="dimmed" size="sm">
-            Configurações de formas de pagamento serão definidas aqui.
-          </Text>
+          <PaymentsTab />
         </Tabs.Panel>
       </Tabs>
     </PageContainer>
@@ -263,10 +268,267 @@ function UnitsTab() {
             placeholder="Ex: Quilograma, Unidade"
             error={fieldErrors.label}
           />
-          <Switch
+          <AppSwitch
             label="Ativo"
             checked={active}
             onChange={(e) => setActive(e.currentTarget.checked)}
+          />
+        </Stack>
+      </AppModal>
+
+      <ConfirmDeleteModal
+        opened={deleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleConfirmDelete}
+        itemLabel={deletingLabel ?? undefined}
+        loading={deleteMutation.isPending}
+      />
+    </Stack>
+  )
+}
+
+function PaymentsTab() {
+  const user = useAuthStore((state) => state.user)
+  const companyId = getCompanyIdForData(user)
+  const needsCompany = !companyId
+
+  const { data: list = [], isLoading, error } = usePaymentMethodsList(companyId)
+  const createMutation = useCreatePaymentMethod()
+  const updateMutation = useUpdatePaymentMethod()
+  const deleteMutation = useDeletePaymentMethod()
+
+  const [modalOpen, setModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deletingLabel, setDeletingLabel] = useState<string | null>(null)
+  const [name, setName] = useState('')
+  const [active, setActive] = useState(true)
+  const [allowsDelivery, setAllowsDelivery] = useState(true)
+  const [onlinePayment, setOnlinePayment] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string }>({})
+
+  const paymentMethods = Array.isArray(list) ? list : []
+
+  if (needsCompany) {
+    return (
+      <Card>
+        <Text c="dimmed" size="sm">
+          {getNoCompanyMessage()}
+        </Text>
+      </Card>
+    )
+  }
+
+  const openNew = () => {
+    setEditingId(null)
+    setName('')
+    setActive(true)
+    setAllowsDelivery(true)
+    setOnlinePayment(false)
+    setErrorMessage(null)
+    setFieldErrors({})
+    setModalOpen(true)
+  }
+
+  const openEdit = (p: { id: string; name: string; active: boolean; allowsDelivery: boolean; onlinePayment: boolean }) => {
+    setEditingId(p.id)
+    setName(p.name)
+    setActive(p.active)
+    setAllowsDelivery(p.allowsDelivery)
+    setOnlinePayment(p.onlinePayment)
+    setErrorMessage(null)
+    setFieldErrors({})
+    setModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setErrorMessage(null)
+    setFieldErrors({})
+    setModalOpen(false)
+  }
+
+  const handleSubmit = () => {
+    const nameTrim = name.trim()
+    const errors: { name?: string } = {}
+    if (!nameTrim) errors.name = 'Preencha o nome'
+    if (nameTrim.length < 2) errors.name = 'Nome deve ter pelo menos 2 caracteres'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+    setErrorMessage(null)
+
+    if (editingId) {
+      updateMutation.mutate(
+        {
+          id: editingId,
+          dto: {
+            companyId,
+            name: nameTrim,
+            active,
+            allowsDelivery,
+            onlinePayment,
+          },
+        },
+        {
+          onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
+          onSuccess: () => closeModal(),
+        }
+      )
+    } else {
+      createMutation.mutate(
+        {
+          companyId,
+          name: nameTrim,
+          active,
+          allowsDelivery,
+          onlinePayment,
+        },
+        {
+          onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
+          onSuccess: () => closeModal(),
+        }
+      )
+    }
+  }
+
+  const openDelete = (p: { id: string; name: string }) => {
+    setDeletingId(p.id)
+    setDeletingLabel(p.name)
+    setDeleteModalOpen(true)
+  }
+
+  const closeDeleteModal = () => {
+    setDeletingId(null)
+    setDeletingLabel(null)
+    setDeleteModalOpen(false)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!deletingId) return
+    setErrorMessage(null)
+    deleteMutation.mutate(deletingId, {
+      onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
+      onSuccess: () => closeDeleteModal(),
+    })
+  }
+
+  return (
+    <Stack gap="md">
+      <Text c="dimmed">
+        Cadastre as formas de pagamento disponíveis para a empresa (dinheiro, cartão, PIX, etc.).
+      </Text>
+
+      <Group>
+        <Button size="xs" onClick={openNew}>
+          Nova forma de pagamento
+        </Button>
+      </Group>
+
+      {errorMessage && <AppError message={errorMessage} />}
+
+      {isLoading && <AppLoader />}
+      {error && <AppError message="Erro ao carregar formas de pagamento." />}
+
+      {!isLoading && !error && (
+        <Card>
+          <Table striped highlightOnHover withTableBorder withColumnBorders>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Nome</Table.Th>
+                <Table.Th>Ativo</Table.Th>
+                <Table.Th>Permite entrega</Table.Th>
+                <Table.Th>Pagamento online</Table.Th>
+                <Table.Th>Ações</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {paymentMethods.length === 0 && (
+                <Table.Tr>
+                  <Table.Td colSpan={5}>
+                    <Text c="dimmed" size="sm">
+                      Nenhuma forma de pagamento configurada. Clique em Nova forma de pagamento para cadastrar.
+                    </Text>
+                  </Table.Td>
+                </Table.Tr>
+              )}
+              {paymentMethods.map((p) => (
+                <Table.Tr key={p.id}>
+                  <Table.Td>
+                    <Text fw={500}>{p.name}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color={p.active ? 'green' : 'gray'}>
+                      {p.active ? 'Sim' : 'Não'}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color={p.allowsDelivery ? 'green' : 'gray'}>
+                      {p.allowsDelivery ? 'Sim' : 'Não'}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color={p.onlinePayment ? 'blue' : 'gray'}>
+                      {p.onlinePayment ? 'Sim' : 'Não'}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap="xs">
+                      <Button size="xs" variant="light" onClick={() => openEdit(p)}>
+                        Editar
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        color="red"
+                        loading={deleteMutation.isPending}
+                        onClick={() => openDelete(p)}
+                      >
+                        Excluir
+                      </Button>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Card>
+      )}
+
+      <AppModal
+        opened={modalOpen}
+        title={editingId ? 'Editar forma de pagamento' : 'Nova forma de pagamento'}
+        onClose={closeModal}
+        confirmLabel="Salvar"
+        onConfirm={handleSubmit}
+        loading={createMutation.isPending || updateMutation.isPending}
+      >
+        <Stack gap="sm">
+          {errorMessage && <AppError message={errorMessage} />}
+          <AppInput
+            label="Nome"
+            value={name}
+            onChange={(e) => {
+              setName(e.currentTarget.value)
+              if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }))
+            }}
+            placeholder="Ex: Dinheiro, Cartão, PIX"
+            error={fieldErrors.name}
+          />
+          <AppSwitch
+            label="Ativo"
+            checked={active}
+            onChange={(e) => setActive(e.currentTarget.checked)}
+          />
+          <AppSwitch
+            label="Permite entrega"
+            checked={allowsDelivery}
+            onChange={(e) => setAllowsDelivery(e.currentTarget.checked)}
+          />
+          <AppSwitch
+            label="Pagamento online"
+            checked={onlinePayment}
+            onChange={(e) => setOnlinePayment(e.currentTarget.checked)}
           />
         </Stack>
       </AppModal>

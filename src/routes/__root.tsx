@@ -4,6 +4,7 @@ import { useDisclosure } from '@mantine/hooks'
 import { Icon } from '@/components/icons'
 import { useAuthStore } from '@/store/auth'
 import { useEffect } from 'react'
+import { canAccessCompanies, canManageCompanyUsers } from '@/utils/permissions'
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -66,7 +67,7 @@ function RootComponent() {
             leftSection={<Icon name="home" size={20} />}
           />
 
-          {user?.role === 'SUPER_ADMIN' && (
+          {canAccessCompanies(user?.role) && (
             <NavLink
               component={Link}
               to="/companies"
@@ -75,7 +76,7 @@ function RootComponent() {
             />
           )}
 
-          {user?.role === 'COMPANY_ADMIN' && (
+          {canManageCompanyUsers(user?.role) && (
             <NavLink
               component={Link}
               to="/users"

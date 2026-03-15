@@ -1,3 +1,5 @@
+import type { ApiResponse } from '@/types/api'
+import { unwrapApiData } from '@/types/api'
 import { apiClient } from './client'
 
 export interface UnitMeasure {
@@ -20,32 +22,32 @@ export interface UnitMeasureUpdateDto {
 }
 
 export async function getUnitMeasuresList(): Promise<UnitMeasure[]> {
-  const { data } = await apiClient.get<{ data?: UnitMeasure[] }>('/unitMeasure')
-  const list = (data as any)?.data
+  const { data } = await apiClient.get<ApiResponse<UnitMeasure[]> | UnitMeasure[]>('/unitMeasure')
+  const list = unwrapApiData(data ?? [])
   return Array.isArray(list) ? list : []
 }
 
 export async function getUnitMeasureById(id: string): Promise<UnitMeasure> {
-  const { data } = await apiClient.get<{ data?: UnitMeasure }>(`/unitMeasure/${id}`)
-  return (data as any)?.data
+  const { data } = await apiClient.get<ApiResponse<UnitMeasure> | UnitMeasure>(`/unitMeasure/${id}`)
+  return unwrapApiData(data!)
 }
 
 export async function createUnitMeasure(dto: UnitMeasureCreateDto): Promise<UnitMeasure> {
-  const { data } = await apiClient.post<{ data?: UnitMeasure }>('/unitMeasure', {
+  const { data } = await apiClient.post<ApiResponse<UnitMeasure> | UnitMeasure>('/unitMeasure', {
     key: dto.key.trim().toUpperCase(),
     label: dto.label.trim(),
     active: dto.active ?? true,
   })
-  return (data as any)?.data
+  return unwrapApiData(data!)
 }
 
 export async function updateUnitMeasure(id: string, dto: UnitMeasureUpdateDto): Promise<UnitMeasure> {
-  const { data } = await apiClient.put<{ data?: UnitMeasure }>(`/unitMeasure/${id}`, {
+  const { data } = await apiClient.put<ApiResponse<UnitMeasure> | UnitMeasure>(`/unitMeasure/${id}`, {
     key: dto.key?.trim().toUpperCase(),
     label: dto.label?.trim(),
     active: dto.active,
   })
-  return (data as any)?.data
+  return unwrapApiData(data!)
 }
 
 export async function deleteUnitMeasure(id: string): Promise<void> {

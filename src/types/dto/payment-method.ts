@@ -5,14 +5,15 @@ export interface CreatePaymentMethodDto {
   name: string
   active?: boolean
   allowsDelivery?: boolean
-  isOnlinePayment?: boolean
+  onlinePayment?: boolean
 }
 
 export interface UpdatePaymentMethodDto {
+  companyId: string
   name?: string
   active?: boolean
   allowsDelivery?: boolean
-  isOnlinePayment?: boolean
+  onlinePayment?: boolean
 }
 
 export type PaymentMethodListResponse = PaymentMethod[]

@@ -4,8 +4,8 @@ export interface PaymentMethod {
   name: string
   active: boolean
   allowsDelivery: boolean
-  isOnlinePayment: boolean
-  createdAt: string
-  updatedAt: string | null
-  deletedAt: string | null
+  onlinePayment: boolean
+  createdAt?: string
+  updatedAt?: string | null
+  deletedAt?: string | null
 }

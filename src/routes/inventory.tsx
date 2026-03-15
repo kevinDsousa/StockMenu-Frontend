@@ -1,13 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  Badge,
-  Group,
-  NumberInput,
-  Select,
-  Stack,
-  Table,
-  Text,
-} from '@mantine/core'
+import { Badge, Group, Stack, Table, Text } from '@mantine/core'
 import {
   AppError,
   AppInput,
@@ -16,6 +8,8 @@ import {
   Button,
   PageContainer,
   Card,
+  AppSelect,
+  AppNumberInput,
 } from '@/components'
 import { useAuthStore } from '@/store/auth'
 import {
@@ -26,7 +20,10 @@ import {
   useUnitMeasures,
 } from '@/hooks'
 import { useState } from 'react'
+import type { PrimaryProduct } from '@/entities'
+import type { CreatePrimaryProductDto } from '@/types/dto'
 import { extractApiErrorMessage } from '@/utils/api-error'
+import { getCompanyIdForData, getNoCompanyMessage, mustUseOwnCompany } from '@/utils/permissions'
 
 export const Route = createFileRoute('/inventory')({
   component: InventoryComponent,
@@ -34,9 +31,10 @@ export const Route = createFileRoute('/inventory')({
 
 function InventoryComponent() {
   const user = useAuthStore((state) => state.user)
-  const companyId = user?.companyId ?? null
+  const companyId = getCompanyIdForData(user)
+  const needsCompany = mustUseOwnCompany(user?.role) && !companyId
 
-  const { data, isLoading } = usePrimaryProducts(companyId ?? undefined)
+  const { data, isLoading } = usePrimaryProducts(needsCompany ? undefined : companyId)
   const { data: unitMeasures = [] } = useUnitMeasures()
   const createPrimaryProductMutation = useCreatePrimaryProduct()
   const updatePrimaryProductMutation = useUpdatePrimaryProduct()
@@ -52,7 +50,19 @@ function InventoryComponent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<{ name?: string }>({})
 
-  const items = Array.isArray(data) ? data : (data as any)?.data ?? []
+  const items: PrimaryProduct[] = data ?? []
+
+  if (needsCompany) {
+    return (
+      <PageContainer title="Estoque">
+        <Card>
+          <Text c="dimmed" size="sm">
+            {getNoCompanyMessage()}
+          </Text>
+        </Card>
+      </PageContainer>
+    )
+  }
 
   const resetForm = () => {
     setEditingId(null)
@@ -70,7 +80,7 @@ function InventoryComponent() {
     setIsModalOpen(true)
   }
 
-  const handleOpenEdit = (item: any) => {
+  const handleOpenEdit = (item: PrimaryProduct) => {
     setEditingId(item.id)
     setName(item.name ?? '')
     setUnit(item.unit ?? unitMeasures[0]?.key ?? 'UN')
@@ -96,7 +106,7 @@ function InventoryComponent() {
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
-    const baseDto: any = {
+    const baseDto: CreatePrimaryProductDto = {
       companyId,
       name: nameTrim,
       unit,
@@ -109,9 +119,7 @@ function InventoryComponent() {
     setErrorMessage(null)
 
     if (editingId) {
-      const dto = {
-        ...baseDto,
-      }
+      const dto = { ...baseDto }
       updatePrimaryProductMutation.mutate(
         { id: editingId, dto },
         {
@@ -181,7 +189,7 @@ function InventoryComponent() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {items.map((item: any) => {
+              {items.map((item) => {
                 const lowStock = item.isStockLow
                 const expired = item.isExpired
                 const expiringSoon = item.isExpiringSoon
@@ -254,19 +262,19 @@ function InventoryComponent() {
             }}
             error={fieldErrors.name}
           />
-          <Select
+          <AppSelect
             label="Unidade"
             data={unitMeasures.map((u) => ({ value: u.key, label: u.value }))}
             value={unit}
             onChange={(value) => setUnit(value ?? unitMeasures[0]?.key ?? 'UN')}
           />
-          <NumberInput
+          <AppNumberInput
             label="Estoque atual"
             min={0}
             value={currentStock}
             onChange={setCurrentStock}
           />
-          <NumberInput
+          <AppNumberInput
             label="Alerta de baixa (opcional)"
             min={0}
             value={lowStockAlert}

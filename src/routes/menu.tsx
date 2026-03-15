@@ -9,10 +9,13 @@ import {
   Text,
   Title,
 } from '@mantine/core'
+import { Card } from '@/components'
 import { AppLoader, PageContainer } from '@/components'
 import { useAuthStore } from '@/store/auth'
 import { usePrimaryProducts } from '@/hooks'
+import type { PrimaryProduct } from '@/entities'
 import { TABLE_OPEN_PASTEL, TABLE_REQUESTING_CLOSE_PASTEL } from '@/theme/colors'
+import { getCompanyIdForData, getNoCompanyMessage, mustUseOwnCompany } from '@/utils/permissions'
 
 export const Route = createFileRoute('/menu')({
   component: MenuPage,
@@ -20,8 +23,22 @@ export const Route = createFileRoute('/menu')({
 
 function MenuPage() {
   const user = useAuthStore((state) => state.user)
-  const { data, isLoading } = usePrimaryProducts(user?.companyId ?? undefined)
-  const primaryProducts = Array.isArray(data) ? data : (data as any)?.data ?? []
+  const companyId = getCompanyIdForData(user)
+  const needsCompany = mustUseOwnCompany(user?.role) && !companyId
+  const { data, isLoading } = usePrimaryProducts(needsCompany ? undefined : companyId)
+  const primaryProducts: PrimaryProduct[] = data ?? []
+
+  if (needsCompany) {
+    return (
+      <PageContainer title="Cardápio">
+        <Card>
+          <Text c="dimmed" size="sm">
+            {getNoCompanyMessage()}
+          </Text>
+        </Card>
+      </PageContainer>
+    )
+  }
 
   return (
     <PageContainer title="Cardápio">
@@ -102,7 +119,7 @@ function MenuPage() {
                 </Group>
               ) : (
                 <Stack gap="sm">
-                  {primaryProducts.map((item) => {
+                  {primaryProducts.map((item: PrimaryProduct) => {
                     const lowStock = item.isStockLow
                     const expired = item.isExpired
                     const expiringSoon = item.isExpiringSoon

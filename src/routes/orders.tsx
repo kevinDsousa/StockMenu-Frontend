@@ -1,18 +1,35 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { Badge, Stack, Table, Text } from '@mantine/core'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Badge, Card, Stack, Table, Text } from '@mantine/core'
 import { PageContainer, AppLoader } from '@/components'
 import { useAuthStore } from '@/store/auth'
 import { useOrders } from '@/hooks'
+import type { Order } from '@/entities'
+import { getCompanyIdForData, getNoCompanyMessage, mustUseOwnCompany } from '@/utils/permissions'
 
 export const Route = createFileRoute('/orders')({
   component: OrdersPage,
 })
 
 function OrdersPage() {
+  const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
-  const { data, isLoading } = useOrders(user?.companyId ?? undefined)
+  const companyId = getCompanyIdForData(user)
+  const needsCompany = mustUseOwnCompany(user?.role) && !companyId
+  const { data, isLoading } = useOrders(needsCompany ? undefined : companyId)
 
-  const orders = Array.isArray(data) ? data : (data as any)?.data ?? []
+  const orders: Order[] = data ?? []
+
+  if (needsCompany) {
+    return (
+      <PageContainer title="Pedidos">
+        <Card>
+          <Text c="dimmed" size="sm">
+            {getNoCompanyMessage()}
+          </Text>
+        </Card>
+      </PageContainer>
+    )
+  }
 
   return (
     <PageContainer title="Pedidos">
@@ -36,8 +53,12 @@ function OrdersPage() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {orders.map((order: any) => (
-                <Table.Tr key={order.id} component={Link} to="/orders/$orderId" params={{ orderId: order.id }}>
+              {orders.map((order) => (
+                <Table.Tr
+                  key={order.id}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => navigate({ to: '/orders/$orderId', params: { orderId: order.id } })}
+                >
                   <Table.Td>
                     <Text size="sm" fw={500}>
                       {order.id.slice(0, 8)}

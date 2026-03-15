@@ -26,6 +26,7 @@ export interface TableProps {
   statusTable: TableStatus;
   tableNumber?: number | string;
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
+  onContextMenu?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
 /** Props internas para o Hook de Estilos (JSS) */

@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Badge, Button, Card as MantineCard, Group, Loader, NumberInput, Stack, Table, Text, Textarea, TextInput, Title } from '@mantine/core'
-import { PageContainer, Card } from '@/components'
+import { Badge, Group, Loader, Stack, Table, Text, Title } from '@mantine/core'
+import { PageContainer, Card, Button, AppInput, AppNumberInput, AppTextarea } from '@/components'
 import { useOrder, useOrderItems, useUpdateOrder, useCreateOrderItem, useCancelOrderItem, useUpdateOrderItem } from '@/hooks'
+import type { Order, OrderItem } from '@/entities'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/orders/$orderId')({
@@ -32,8 +33,8 @@ function OrderDetailPage() {
   const cancelItemMutation = useCancelOrderItem(orderId)
   const updateItemMutation = useUpdateOrderItem()
 
-  const order = orderData && !Array.isArray(orderData) && (orderData as any).data ? (orderData as any).data : orderData
-  const items = Array.isArray(itemsData) ? itemsData : (itemsData as any)?.data ?? []
+  const order: Order | undefined = orderData
+  const items: OrderItem[] = itemsData ?? []
 
   const isLoading = isLoadingOrder || isLoadingItems
 
@@ -117,24 +118,24 @@ function OrderDetailPage() {
             </Group>
           </Card>
 
-          <MantineCard withBorder>
+          <Card>
             <Stack gap="md">
               <div>
                 <Title order={5}>Novo item</Title>
                 <Group grow mb="sm" mt="xs">
-                  <TextInput
+                  <AppInput
                     label="Produto (ID)"
                     placeholder="UUID do produto"
                     value={productId}
                     onChange={(event) => setProductId(event.currentTarget.value)}
                   />
-                  <NumberInput
+                  <AppNumberInput
                     label="Quantidade"
                     min={1}
                     value={quantity}
                     onChange={setQuantity}
                   />
-                  <NumberInput
+                  <AppNumberInput
                     label="Valor unitário"
                     min={0}
                     precision={2}
@@ -143,13 +144,13 @@ function OrderDetailPage() {
                   />
                 </Group>
                 <Group grow mb="sm">
-                  <TextInput
+                  <AppInput
                     label="Nome na mesa"
                     placeholder="Opcional"
                     value={customerName}
                     onChange={(event) => setCustomerName(event.currentTarget.value)}
                   />
-                  <Textarea
+                  <AppTextarea
                     label="Observação"
                     placeholder="Ex.: sem gelo, ponto da carne..."
                     minRows={1}
@@ -190,7 +191,7 @@ function OrderDetailPage() {
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
-                      {items.map((item: any) => (
+                      {items.map((item) => (
                         <Table.Tr key={item.id}>
                           <Table.Td>
                             <Text size="sm">{item.productId?.slice(0, 8)}</Text>
@@ -269,7 +270,7 @@ function OrderDetailPage() {
                 )}
               </div>
             </Stack>
-          </MantineCard>
+          </Card>
         </Stack>
       )}
     </PageContainer>

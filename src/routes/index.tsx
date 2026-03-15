@@ -1,12 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Group, Stack, Text } from '@mantine/core'
+import { Card, Group, Stack, Text } from '@mantine/core'
 import { Button, PageContainer, AppModal, AppInput, AppLoader, AppError } from '@/components'
 import { VenueTables } from '@/components/widget/VenueTables/VenueTables'
 import { SiderVenueTables } from '@/components/widget/SiderVenueTables/SiderVenueTables'
 import { useState } from 'react'
 import { useVenueTables, useCreateVenueTable, useUpdateVenueTable } from '@/hooks'
 import { useAuthStore } from '@/store/auth'
+import type { VenueTable } from '@/entities'
 import { extractApiErrorMessage } from '@/utils/api-error'
+import { getCompanyIdForData, getNoCompanyMessage, mustUseOwnCompany } from '@/utils/permissions'
 
 export const Route = createFileRoute('/')({
   component: DashboardComponent,
@@ -20,15 +22,27 @@ function DashboardComponent() {
   const [tableNumber, setTableNumber] = useState('')
   const [capacity, setCapacity] = useState('')
   const user = useAuthStore((state) => state.user)
-  const { data: tables, isLoading } = useVenueTables(user?.companyId ?? undefined)
+  const companyId = getCompanyIdForData(user)
+  const needsCompany = mustUseOwnCompany(user?.role) && !companyId
+  const { data: tables, isLoading } = useVenueTables(needsCompany ? undefined : companyId)
   const createVenueTableMutation = useCreateVenueTable()
   const updateVenueTableMutation = useUpdateVenueTable()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<{ tableNumber?: string }>({})
 
-  const tableList = Array.isArray(tables)
-    ? tables
-    : (tables as any)?.data ?? []
+  const tableList: VenueTable[] = tables ?? []
+
+  if (needsCompany) {
+    return (
+      <PageContainer title="Dashboard">
+        <Card>
+          <Text c="dimmed" size="sm">
+            {getNoCompanyMessage()}
+          </Text>
+        </Card>
+      </PageContainer>
+    )
+  }
 
   const handleOpenSidebar = (tableId: string) => {
     setSelectedTableId(tableId)
@@ -48,7 +62,7 @@ function DashboardComponent() {
     setIsModalOpen(true)
   }
 
-  const handleOpenEditTableModal = (table: any) => {
+  const handleOpenEditTableModal = (table: VenueTable) => {
     setEditingTableId(table.id)
     setTableNumber(String(table.tableNumber ?? ''))
     setCapacity(table.capacity != null ? String(table.capacity) : '')
@@ -63,7 +77,7 @@ function DashboardComponent() {
   }
 
   const handleSubmitTable = () => {
-    if (!user?.companyId) return
+    if (!companyId) return
     const parsedTableNumber = Number(tableNumber)
     const parsedCapacity = capacity ? Number(capacity) : null
     const errors: { tableNumber?: string } = {}
@@ -92,7 +106,7 @@ function DashboardComponent() {
     } else {
       createVenueTableMutation.mutate(
         {
-          companyId: user.companyId,
+          companyId: companyId!,
           tableNumber: parsedTableNumber,
           capacity: parsedCapacity,
         },
@@ -123,13 +137,13 @@ function DashboardComponent() {
 
       {!isLoading && tableList && tableList.length > 0 && (
         <Group gap="sm">
-          {tableList.map((table: any) => (
+          {tableList.map((table) => (
             <VenueTables
               key={table.id}
               statusTable={table.status === 'FREE' ? 'open' : 'requesting_close'}
               tableNumber={table.tableNumber}
               onClick={() => handleOpenSidebar(table.id)}
-              onContextMenu={(event: React.MouseEvent) => {
+              onContextMenu={(event) => {
                 event.preventDefault()
                 handleOpenEditTableModal(table)
               }}

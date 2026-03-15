@@ -35,7 +35,7 @@ function LoginPage() {
     try {
       await mutateAsync(parsed.data)
       router.navigate({ to: '/' })
-    } catch (error: any) {
+    } catch (error: unknown) {
       setFormError(extractApiErrorMessage(error, 'Falha ao efetuar login.'))
     }
   }

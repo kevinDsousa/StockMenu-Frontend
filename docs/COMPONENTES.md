@@ -18,8 +18,17 @@ import { Button, Card, PageContainer } from '@/components'
 
 ### UI
 
-- **Button** – botão com radius padrão; aceita todas as props do Mantine Button.
-- **Card** – card com borda, sombra e radius; aceita todas as props do Mantine Card.
+- **Button** (AppButton) – botão com status (default, success, danger, warning, info) e styleConfig; radius md.
+- **Card** – card simples com borda, sombra e radius.
+- **AppCard** – card com status e styleConfig (default, success, danger, warning, info).
+- **AppInput** – texto com status (default, error, success) e styleConfig; radius md.
+- **AppPasswordInput** – senha com mesmo padrão do AppInput.
+- **AppSelect** – select com status e styleConfig; radius md.
+- **AppCheckbox** – checkbox com status (default, error) e styleConfig; radius sm.
+- **AppSwitch** – switch com status (default, error) e styleConfig.
+- **AppNumberInput** – número com mesmo padrão do AppInput; radius md.
+- **AppTextarea** – textarea com mesmo padrão do AppInput; radius md.
+- **AppDataTable**, **AppModal**, **AppTooltip**, **AppLoader**, **AppError** – demais componentes de UI.
 
 ### Layout
 

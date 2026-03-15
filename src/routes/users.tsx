@@ -1,10 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Badge, Group, Select, Stack, Switch, Table, Text } from '@mantine/core'
-import { AppInput, AppLoader, AppModal, Button, PageContainer, AppError } from '@/components'
+import { Badge, Group, Stack, Table, Text } from '@mantine/core'
+import { AppInput, AppLoader, AppModal, Button, PageContainer, AppError, AppSelect, AppSwitch } from '@/components'
 import { useUsers, useCreateUser, useUpdateUser } from '@/hooks'
 import { useAuthStore } from '@/store/auth'
 import { useState } from 'react'
+import type { User } from '@/entities'
+import type { UpdateUserDto } from '@/types/dto'
 import { extractApiErrorMessage } from '@/utils/api-error'
+import { canManageCompanyUsers, getNoPermissionMessage } from '@/utils/permissions'
 
 export const Route = createFileRoute('/users')({
   component: UsersPage,
@@ -13,14 +16,13 @@ export const Route = createFileRoute('/users')({
 function UsersPage() {
   const user = useAuthStore((state) => state.user)
   const companyId = user?.companyId ?? null
-  const userRole = user?.role
 
-  if (userRole !== 'COMPANY_ADMIN') {
+  if (!canManageCompanyUsers(user?.role)) {
     return (
       <PageContainer title="Usuários da empresa">
         <Stack gap="sm">
           <Text c="dimmed" size="sm">
-            Você não tem permissão para acessar esta área.
+            {getNoPermissionMessage('users')}
           </Text>
         </Stack>
       </PageContainer>
@@ -41,7 +43,7 @@ function UsersPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({})
 
-  const users = Array.isArray(data) ? data : (data as any)?.data ?? []
+  const users: User[] = data ?? []
 
   const resetForm = () => {
     setEditingUserId(null)
@@ -58,7 +60,7 @@ function UsersPage() {
     setIsModalOpen(true)
   }
 
-  const handleOpenEditUserModal = (u: any) => {
+  const handleOpenEditUserModal = (u: User) => {
     setEditingUserId(u.id)
     setName(u.name ?? '')
     setEmail(u.email ?? '')
@@ -86,14 +88,12 @@ function UsersPage() {
     setErrorMessage(null)
 
     if (editingUserId) {
-      const dto: any = {
+      const dto: UpdateUserDto = {
         name,
         email,
         role,
         active,
-      }
-      if (password) {
-        dto.password = password
+        ...(password ? { password } : {}),
       }
       updateUserMutation.mutate(
         { id: editingUserId, dto },
@@ -157,7 +157,7 @@ function UsersPage() {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {users.map((u: any) => (
+            {users.map((u) => (
               <Table.Tr key={u.id}>
                 <Table.Td>{u.name}</Table.Td>
                 <Table.Td>{u.email}</Table.Td>
@@ -234,7 +234,7 @@ function UsersPage() {
               onChange={(event) => setPassword(event.currentTarget.value)}
             />
           )}
-          <Select
+          <AppSelect
             label="Perfil"
             data={[
               { value: 'WAITER', label: 'Garçom' },
@@ -243,7 +243,7 @@ function UsersPage() {
             value={role}
             onChange={(value) => setRole((value as 'WAITER' | 'COMPANY_ADMIN') ?? 'WAITER')}
           />
-          <Switch
+          <AppSwitch
             label="Ativo"
             checked={active}
             onChange={(event) => setActive(event.currentTarget.checked)}

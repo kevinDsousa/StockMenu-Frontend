@@ -1,10 +1,12 @@
 import { AppSideBar } from "@/components/ui/DefaultSideBar/AppSideBar"
 import { AppModal, Button, AppError } from "@/components"
-import { Group, NumberInput, Select, Stack, Text } from "@mantine/core"
+import { Group, Stack, Text } from "@mantine/core"
+import { AppNumberInput, AppSelect } from "@/components"
 import { useOrders, useCreateOrder, useTransferOrder, useVenueTables, useSplitVenueTable, useMergeVenueTables } from "@/hooks"
 import { useAuthStore } from "@/store/auth"
 import { useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
+import type { Order, VenueTable } from "@/entities"
 import { extractApiErrorMessage } from "@/utils/api-error"
 
 interface SiderVenueTablesProps {
@@ -30,16 +32,16 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
   const [splitTableNumber, setSplitTableNumber] = useState<number | ''>('')
   const [splitCapacity, setSplitCapacity] = useState<number | ''>('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const allOrders = Array.isArray(data) ? data : (data as any)?.data ?? []
-  const tableOrders = allOrders.filter((order: any) => order.tableId === tableId)
-  const tablesList = Array.isArray(venueTables) ? venueTables : (venueTables as any)?.data ?? []
+  const allOrders: Order[] = data ?? []
+  const tableOrders = allOrders.filter((order) => order.tableId === tableId)
+  const tablesList: VenueTable[] = venueTables ?? []
   const otherTables = Array.from(
     new Map(
       allOrders
-        .filter((order: any) => order.tableId && order.tableId !== tableId)
-        .map((order: any) => [order.tableId, order])
+        .filter((order) => order.tableId && order.tableId !== tableId)
+        .map((order) => [order.tableId, order])
     ).values()
-  )
+  ) as Order[]
 
   useEffect(() => {
     if (!isOpen) setErrorMessage(null)
@@ -84,7 +86,7 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
             {
               tableNumber: Number(splitTableNumber),
               capacity: splitCapacity ? Number(splitCapacity) : null,
-              orderIds: tableOrders.map((o: any) => o.id),
+              orderIds: tableOrders.map((o) => o.id),
             },
           ],
         },
@@ -140,7 +142,7 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
       },
       {
         onError: (err) => setErrorMessage(extractApiErrorMessage(err)),
-        onSuccess: (createdOrder: any) => {
+        onSuccess: (createdOrder: Order) => {
           const order = createdOrder && !Array.isArray(createdOrder) && createdOrder.data
             ? createdOrder.data
             : createdOrder
@@ -194,7 +196,7 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
             Pedidos da mesa
           </Text>
           <Stack gap="xs">
-            {tableOrders.map((order: any) => (
+            {tableOrders.map((order) => (
               <Group key={order.id} justify="space-between">
                 <Text size="sm">
                   Pedido {order.id.slice(0, 8)} - Total: {order.totalAmount?.toFixed(2) ?? '0,00'}
@@ -242,12 +244,12 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
       >
         <Stack gap="sm">
           {errorMessage && <AppError message={errorMessage} />}
-          <Select
+          <AppSelect
             label="Mesa destino"
             placeholder="Selecione a mesa destino"
-            data={otherTables.map((order: any) => ({
-              value: order.tableId,
-              label: `Mesa ${order.tableId.slice(0, 8)}`,
+            data={otherTables.map((order) => ({
+              value: order.tableId ?? '',
+              label: `Mesa ${(order.tableId ?? '').slice(0, 8)}`,
             }))}
             value={targetTableId}
             onChange={setTargetTableId}
@@ -265,13 +267,13 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
       >
         <Stack gap="sm">
           {errorMessage && <AppError message={errorMessage} />}
-          <NumberInput
+          <AppNumberInput
             label="Número da nova mesa"
             min={1}
             value={splitTableNumber}
             onChange={setSplitTableNumber}
           />
-          <NumberInput
+          <AppNumberInput
             label="Capacidade da nova mesa (opcional)"
             min={1}
             value={splitCapacity}
@@ -293,12 +295,12 @@ export const SiderVenueTables = ({ isOpen, onClose, tableId }: SiderVenueTablesP
       >
         <Stack gap="sm">
           {errorMessage && <AppError message={errorMessage} />}
-          <Select
+          <AppSelect
             label="Mesa destino"
             placeholder="Selecione a mesa destino"
             data={tablesList
-              .filter((t: any) => t.id !== tableId)
-              .map((t: any) => ({
+              .filter((t) => t.id !== tableId)
+              .map((t) => ({
                 value: t.id,
                 label: `Mesa ${t.tableNumber}`,
               }))}

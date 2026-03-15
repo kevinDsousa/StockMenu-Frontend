@@ -1,10 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Badge, Group, NumberInput, Stack, Table, Text } from '@mantine/core'
-import { AppLoader, PageContainer, Card, Button, AppError } from '@/components'
+import { Badge, Group, Stack, Table, Text } from '@mantine/core'
+import { AppLoader, PageContainer, Card, Button, AppError, AppNumberInput } from '@/components'
 import { useCompanies, useUpdateCompany } from '@/hooks'
 import { useAuthStore } from '@/store/auth'
 import { useState } from 'react'
+import type { Company } from '@/entities'
 import { extractApiErrorMessage } from '@/utils/api-error'
+import { canAccessCompanies, getNoPermissionMessage } from '@/utils/permissions'
 
 export const Route = createFileRoute('/companies')({
   component: CompaniesComponent,
@@ -12,14 +14,13 @@ export const Route = createFileRoute('/companies')({
 
 function CompaniesComponent() {
   const user = useAuthStore((state) => state.user)
-  const role = user?.role
 
-  if (role !== 'SUPER_ADMIN') {
+  if (!canAccessCompanies(user?.role)) {
     return (
       <PageContainer title="Gestão de Empresas">
         <Card>
           <Text c="dimmed" size="sm">
-            Você não tem permissão para acessar esta área.
+            {getNoPermissionMessage('companies')}
           </Text>
         </Card>
       </PageContainer>
@@ -30,7 +31,7 @@ function CompaniesComponent() {
   const updateCompanyMutation = useUpdateCompany()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const companies = Array.isArray(data) ? data : (data as any)?.data ?? []
+  const companies: Company[] = data ?? []
 
   const handleChangeMaxWaiters = (companyId: string, value: number | '') => {
     if (value === '' || value < 0) return
@@ -74,7 +75,7 @@ function CompaniesComponent() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {companies.map((company: any) => (
+              {companies.map((company) => (
                 <Table.Tr key={company.id}>
                   <Table.Td>
                     <Text fw={500}>{company.tradeName}</Text>
@@ -98,7 +99,7 @@ function CompaniesComponent() {
                   </Table.Td>
                   <Table.Td>
                     <Group gap="xs">
-                      <NumberInput
+                      <AppNumberInput
                         size="xs"
                         min={0}
                         value={company.maxWaiters ?? 0}
